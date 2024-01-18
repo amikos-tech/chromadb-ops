@@ -56,18 +56,18 @@ docker build -t chops .
 #### WAL Commit
 
 ```bash
-docker run -it --rm -v ./persist_dir:/chroma-data chops commit-wal /chroma-data
+docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-ops/chops:latest commit-wal /chroma-data
 ```
 
 #### WAL Cleanup
 
 ```bash
-docker run -it --rm -v ./persist_dir:/chroma-data chops clean-wal /chroma-data
+docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-ops/chops:latest clean-wal /chroma-data
 ```
 
 #### WAL Export
 
 ```bash
-docker run -it --rm -v ./persist_dir:/chroma-data -v ./backup:/backup chops export-wal /chroma-data --out /backup/export.jsonl
+docker run -it --rm -v ./persist_dir:/chroma-data -v ./backup:/backup ghcr.io/amikos-tech/chromadb-ops/chops:latest export-wal /chroma-data --out /backup/export.jsonl
 ```
 
