@@ -2,9 +2,13 @@ on:
   push:
     branches:
       - main
+    paths:
+      - chroma_ops/**
   pull_request:
     branches:
       - main
+    paths:
+      - chroma_ops/**
 
 jobs:
   test:
