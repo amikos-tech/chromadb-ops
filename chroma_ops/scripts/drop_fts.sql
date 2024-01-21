@@ -1,0 +1,10 @@
+BEGIN TRANSACTION;
+DROP TABLE IF EXISTS  embedding_fulltext_search;
+DROP TABLE IF EXISTS embedding_fulltext_search_config;
+DROP TABLE IF EXISTS embedding_fulltext_search_content;
+DROP TABLE IF EXISTS embedding_fulltext_search_data;
+DROP TABLE IF EXISTS embedding_fulltext_search_docsize;
+DROP TABLE IF EXISTS embedding_fulltext_search_idx;
+CREATE TABLE embedding_fulltext (id INTEGER PRIMARY KEY);
+DELETE FROM migrations WHERE dir='metadb' AND version='3' AND filename='00003-full-text-tokenize.sqlite.sql';
+COMMIT TRANSACTION;

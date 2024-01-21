@@ -2,6 +2,8 @@
 import argparse
 import os
 import sqlite3
+import sys
+
 import typer
 from chromadb.segment.impl.vector.local_persistent_hnsw import PersistentData
 
@@ -14,8 +16,7 @@ from chroma_ops.utils import (
 
 def clean_wal(persist_dir: str) -> None:
     validate_chroma_persist_dir(persist_dir)
-    print("Size before: ", get_dir_size(persist_dir))
-    # TODO add path join here
+    typer.echo(f"Size before: {get_dir_size(persist_dir)}", file=sys.stderr)
     sql_file = os.path.join(persist_dir, "chroma.sqlite3")
     conn = sqlite3.connect(sql_file)
     # conn = sqlite3.connect(f"file:{sql_file}?mode=ro", uri=True)
@@ -50,13 +51,13 @@ def clean_wal(persist_dir: str) -> None:
                     f"DELETE FROM embeddings_queue WHERE seq_id IN ({','.join([str(i) for i in list_of_ids[batch:batch + batch_size]])});"
                 )
     if len(wal_cleanup_queries) > 0:
-        print("Cleaning up WAL")
+        typer.echo("Cleaning up WAL", file=sys.stderr)
         wal_cleanup_queries.append("VACUUM;")
         cursor.executescript("\n".join(wal_cleanup_queries))
     # Close the cursor and connection
     cursor.close()
     conn.close()
-    print("Size after: ", get_dir_size(persist_dir))
+    typer.echo(f"Size after: {get_dir_size(persist_dir)}", file=sys.stderr)
 
 
 def command(
