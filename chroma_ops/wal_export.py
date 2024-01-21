@@ -5,6 +5,7 @@ import os
 import sqlite3
 import sys
 from contextlib import contextmanager
+from typing import Optional, Generator, IO, Union, Any, TextIO
 
 import typer
 
@@ -12,11 +13,12 @@ from chroma_ops.utils import validate_chroma_persist_dir
 
 
 @contextmanager
-def smart_open(filename=None):
+def smart_open(
+    filename: Optional[str] = None,
+) -> Generator[Union[IO[Any], TextIO], None, None]:
+    fh: Union[IO[Any], TextIO] = sys.stdout
     if filename:
-        fh = open(filename, 'w')
-    else:
-        fh = sys.stdout
+        fh = open(filename, "w")
 
     try:
         yield fh
@@ -25,7 +27,7 @@ def smart_open(filename=None):
             fh.close()
 
 
-def export_wal(persist_dir: str, output_file: str):
+def export_wal(persist_dir: str, output_file: str) -> None:
     validate_chroma_persist_dir(persist_dir)
     sql_file = os.path.join(persist_dir, "chroma.sqlite3")
     conn = sqlite3.connect(f"file:{sql_file}?mode=ro", uri=True)
@@ -38,7 +40,7 @@ def export_wal(persist_dir: str, output_file: str):
         for row in cursor:
             row_data = {}
             for i, column_name in enumerate(column_names):
-                if column_name == 'vector':
+                if column_name == "vector":
                     row_data[column_name] = base64.b64encode(row[i]).decode()
                 else:
                     row_data[column_name] = row[i]
@@ -50,9 +52,9 @@ def export_wal(persist_dir: str, output_file: str):
 
 
 def command(
-        persist_dir: str = typer.Argument(..., help="The persist directory"),
-        out: str = typer.Option(None, "--out", "-o", help="The output jsonl file"),
-):
+    persist_dir: str = typer.Argument(..., help="The persist directory"),
+    out: str = typer.Option(None, "--out", "-o", help="The output jsonl file"),
+) -> None:
     export_wal(persist_dir, out)
 
 
