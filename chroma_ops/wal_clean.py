@@ -2,14 +2,17 @@
 import argparse
 import os
 import sqlite3
-import hnswlib
 import typer
 from chromadb.segment.impl.vector.local_persistent_hnsw import PersistentData
 
-from chroma_ops.utils import validate_chroma_persist_dir, get_hnsw_index_ids, get_dir_size
+from chroma_ops.utils import (
+    validate_chroma_persist_dir,
+    get_hnsw_index_ids,
+    get_dir_size,
+)
 
 
-def clean_wal(persist_dir: str):
+def clean_wal(persist_dir: str) -> None:
     validate_chroma_persist_dir(persist_dir)
     print("Size before: ", get_dir_size(persist_dir))
     # TODO add path join here
@@ -26,7 +29,7 @@ def clean_wal(persist_dir: str):
     results = cursor.fetchall()
     wal_cleanup_queries = []
     for row in results:
-        metadata_pickle = os.path.join(persist_dir, row[0], 'index_metadata.pickle')
+        metadata_pickle = os.path.join(persist_dir, row[0], "index_metadata.pickle")
         if os.path.exists(metadata_pickle):
             metadata = PersistentData.load_from_file(metadata_pickle)
             wal_cleanup_queries.append(
@@ -57,8 +60,8 @@ def clean_wal(persist_dir: str):
 
 
 def command(
-        persist_dir: str = typer.Argument(..., help="The persist directory"),
-):
+    persist_dir: str = typer.Argument(..., help="The persist directory"),
+) -> None:
     clean_wal(persist_dir)
 
 

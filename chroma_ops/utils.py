@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, cast
 
 import hnswlib
 
@@ -22,7 +22,7 @@ def get_hnsw_index_ids(filename: str, space: str = "l2", dim: int = 384) -> List
     )
     ids = index.get_ids_list().copy()
     index.close_file_handles()
-    return ids
+    return cast(List[int], ids)
 
 
 def get_dir_size(path: str) -> int:

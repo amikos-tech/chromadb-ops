@@ -21,15 +21,17 @@ pip install chromadb-ops
 This command ensures your WAL is committed to binary vector index (HNSW).
 
 ```bash
-chown commit-wal /path/to/persist_dir
+chops commit-wal /path/to/persist_dir
 ```
+
+> Note: You can skip certain collections by running `chops commit-wal /path/to/persist_dir --skip <collection_name>`
 
 ### WAL Cleanup
 
 This command cleans up the committed portion of the WAL and VACUUMs the database.
 
 ```bash
-chown cleanup-wal /path/to/persist_dir
+chops cleanup-wal /path/to/persist_dir
 ```
 
 ### WAL Export
@@ -37,7 +39,7 @@ chown cleanup-wal /path/to/persist_dir
 This commands exports the WAL to a `jsonl` file. The command can be useful in taking backups of the WAL.
 
 ```bash
-chown export-wal /path/to/persist_dir --out /path/to/export.jsonl
+chops export-wal /path/to/persist_dir --out /path/to/export.jsonl
 ```
 
 > Note: If --out or -o is not specified the command will print the output to stdout.
@@ -70,4 +72,3 @@ docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-o
 ```bash
 docker run -it --rm -v ./persist_dir:/chroma-data -v ./backup:/backup ghcr.io/amikos-tech/chromadb-ops/chops:latest export-wal /chroma-data --out /backup/export.jsonl
 ```
-
