@@ -1,5 +1,6 @@
 import typer
 
+from chroma_ops.rebuild_fts import rebuild_fts
 from chroma_ops.wal_commit import command as commit_wal_command
 from chroma_ops.wal_clean import command as clean_wal_command
 from chroma_ops.wal_export import command as export_wal_command
@@ -18,5 +19,8 @@ app.command(
 app.command(
     name="export-wal", help="Exports the WAL to a jsonl file.", no_args_is_help=True
 )(export_wal_command)
+app.command(
+    name="rebuild-fts", help="Rebuilds Full Text Search index.", no_args_is_help=True
+)(rebuild_fts)
 if __name__ == "__main__":
     app()

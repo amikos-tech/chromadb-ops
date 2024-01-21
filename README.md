@@ -44,6 +44,17 @@ chops export-wal /path/to/persist_dir --out /path/to/export.jsonl
 
 > Note: If --out or -o is not specified the command will print the output to stdout.
 
+### Full-Text Search Index Rebuild
+
+This command rebuilds the full-text search index.
+
+> Note: **_Why is this needed_**? Users have reported broken FTS indices that result in a error of this
+> kind: `no such table: embedding_fulltext_search`
+
+```bash
+chops rebuild-fts /path/to/persist_dir
+```
+
 ### Using Docker
 
 > Note: You have to mount your persist directory into the container for the commands to work.
@@ -71,4 +82,10 @@ docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-o
 
 ```bash
 docker run -it --rm -v ./persist_dir:/chroma-data -v ./backup:/backup ghcr.io/amikos-tech/chromadb-ops/chops:latest export-wal /chroma-data --out /backup/export.jsonl
+```
+
+#### Full-Text Search Index Rebuild
+
+```bash
+docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-ops/chops:latest rebuild-fts /chroma-data
 ```

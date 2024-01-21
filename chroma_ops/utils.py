@@ -25,6 +25,12 @@ def get_hnsw_index_ids(filename: str, space: str = "l2", dim: int = 384) -> List
     return cast(List[int], ids)
 
 
+def read_script(script: str) -> str:
+    return open(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), script), "r"
+    ).read()
+
+
 def get_dir_size(path: str) -> int:
     total_size = 0
     for dirpath, dirnames, filenames in os.walk(path):
