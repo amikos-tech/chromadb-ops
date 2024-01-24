@@ -3,6 +3,7 @@ import argparse
 import os
 import sqlite3
 import sys
+from typing import Optional, Sequence
 
 import typer
 from chromadb.segment.impl.vector.local_persistent_hnsw import PersistentData
@@ -14,7 +15,7 @@ from chroma_ops.utils import (
 )
 
 
-def clean_wal(persist_dir: str) -> None:
+def clean_wal(persist_dir: str, skip_collection_names: Optional[Sequence[str]] = None) -> None:
     validate_chroma_persist_dir(persist_dir)
     typer.echo(f"Size before: {get_dir_size(persist_dir)}", file=sys.stderr)
     sql_file = os.path.join(persist_dir, "chroma.sqlite3")
@@ -23,13 +24,15 @@ def clean_wal(persist_dir: str) -> None:
 
     cursor = conn.cursor()
 
-    query = "SELECT s.id as 'segment',s.topic as 'topic', c.id as 'collection' , c.dimension as 'dimension' FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
+    query = "SELECT s.id as 'segment',s.topic as 'topic', c.id as 'collection' , c.dimension as 'dimension', c.name FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
 
     cursor.execute(query)
 
     results = cursor.fetchall()
     wal_cleanup_queries = []
     for row in results:
+        if skip_collection_names and row[4] in skip_collection_names:
+            continue
         metadata_pickle = os.path.join(persist_dir, row[0], "index_metadata.pickle")
         if os.path.exists(metadata_pickle):
             metadata = PersistentData.load_from_file(metadata_pickle)
@@ -61,13 +64,20 @@ def clean_wal(persist_dir: str) -> None:
 
 
 def command(
-    persist_dir: str = typer.Argument(..., help="The persist directory"),
+        persist_dir: str = typer.Argument(..., help="The persist directory"),
+        skip_collection_names: str = typer.Option(
+            None,
+            "--skip-collection-names",
+            "-s",
+            help="Comma separated list of collection names to skip",
+        ),
 ) -> None:
-    clean_wal(persist_dir)
+    clean_wal(persist_dir, skip_collection_names=skip_collection_names)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("persist_dir", type=str)
+    parser.add_argument("--skip-collection-names", type=str, default=None)
     arg = parser.parse_args()
-    clean_wal(arg.persist_dir)
+    clean_wal(arg.persist_dir, skip_collection_names=arg.skip_collection_names)
