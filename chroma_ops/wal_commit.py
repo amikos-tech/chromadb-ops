@@ -70,4 +70,4 @@ if __name__ == "__main__":
     parser.add_argument("persist-dir", type=str)
     parser.add_argument("--skip-collection-names", type=str, default=None)
     arg = parser.parse_args()
-    commit_wal(arg.persist_dir)
+    commit_wal(arg.persist_dir, skip_collection_names=arg.skip_collection_names)
