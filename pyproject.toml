@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "chromadb-ops"
-version = "0.0.3"
+version = "0.0.4"
 description = "Tiny unofficial ChromaDB operations CLI to help you manage your ChromaDB instance."
 authors = ["Trayan Azarov <trayan.azarov@amikos.tech>"]
 license = "MIT"
