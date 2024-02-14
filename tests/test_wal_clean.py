@@ -56,6 +56,8 @@ def test_clean_skip_collections() -> None:
         assert count.fetchone()[0] == records_to_add
         clean_wal(temp_dir, skip_collection_names=[col.name])
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
-        assert count.fetchone()[0] == records_to_add # no changes as we skip the only collection
+        assert (
+            count.fetchone()[0] == records_to_add
+        )  # no changes as we skip the only collection
         size_after = get_dir_size(temp_dir)
-        assert size_after == size_before # no changes as we skip the only collection
+        assert size_after == size_before  # no changes as we skip the only collection

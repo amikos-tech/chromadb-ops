@@ -15,7 +15,9 @@ from chroma_ops.utils import (
 )
 
 
-def clean_wal(persist_dir: str, skip_collection_names: Optional[Sequence[str]] = None) -> None:
+def clean_wal(
+    persist_dir: str, skip_collection_names: Optional[Sequence[str]] = None
+) -> None:
     validate_chroma_persist_dir(persist_dir)
     typer.echo(f"Size before: {get_dir_size(persist_dir)}", file=sys.stderr)
     sql_file = os.path.join(persist_dir, "chroma.sqlite3")
@@ -44,6 +46,8 @@ def clean_wal(persist_dir: str, skip_collection_names: Optional[Sequence[str]] =
                 "select str_value from collection_metadata where collection_id=? and key='hnsw:space'",
                 (row[2],),
             ).fetchone()
+            if not hnsw_space:
+                continue
             hnsw_space = "l2" if hnsw_space is None else hnsw_space[0]
             list_of_ids = get_hnsw_index_ids(
                 f"{os.path.join(persist_dir, row[0])}", hnsw_space, row[3]
@@ -64,13 +68,13 @@ def clean_wal(persist_dir: str, skip_collection_names: Optional[Sequence[str]] =
 
 
 def command(
-        persist_dir: str = typer.Argument(..., help="The persist directory"),
-        skip_collection_names: str = typer.Option(
-            None,
-            "--skip-collection-names",
-            "-s",
-            help="Comma separated list of collection names to skip",
-        ),
+    persist_dir: str = typer.Argument(..., help="The persist directory"),
+    skip_collection_names: str = typer.Option(
+        None,
+        "--skip-collection-names",
+        "-s",
+        help="Comma separated list of collection names to skip",
+    ),
 ) -> None:
     clean_wal(persist_dir, skip_collection_names=skip_collection_names)
 
