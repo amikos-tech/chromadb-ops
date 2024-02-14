@@ -31,7 +31,7 @@ chops commit-wal /path/to/persist_dir
 This command cleans up the committed portion of the WAL and VACUUMs the database.
 
 ```bash
-chops cleanup-wal /path/to/persist_dir
+chops clean-wal /path/to/persist_dir
 ```
 
 ### WAL Export
