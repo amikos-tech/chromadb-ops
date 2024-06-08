@@ -6,17 +6,19 @@ import sys
 from typing import Optional, Sequence
 
 import typer
-from chromadb.segment.impl.vector.local_persistent_hnsw import PersistentData
-
+from chromadb import __version__ as chroma_version
 from chroma_ops.utils import (
     validate_chroma_persist_dir,
     get_hnsw_index_ids,
-    get_dir_size,
+    get_dir_size, PersistentData,
 )
 
 
 def clean_wal(
-    persist_dir: str, skip_collection_names: Optional[Sequence[str]] = None
+    persist_dir: str,
+    skip_collection_names: Optional[Sequence[str]] = None,
+    database: Optional[str] = "default",
+    namespace: Optional[str] = "default",
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
     typer.echo(f"Size before: {get_dir_size(persist_dir)}", file=sys.stderr)
@@ -25,8 +27,10 @@ def clean_wal(
     # conn = sqlite3.connect(f"file:{sql_file}?mode=ro", uri=True)
 
     cursor = conn.cursor()
-
-    query = "SELECT s.id as 'segment',s.topic as 'topic', c.id as 'collection' , c.dimension as 'dimension', c.name FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
+    if int(chroma_version.split(".")[1]) <= 4:
+        query = "SELECT s.id as 'segment',s.topic as 'topic', c.id as 'collection' , c.dimension as 'dimension', c.name FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
+    else:
+        query = "SELECT s.id as 'segment', c.id as 'collection' , c.dimension as 'dimension', c.name FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
 
     cursor.execute(query)
 
@@ -35,24 +39,34 @@ def clean_wal(
     for row in results:
         if skip_collection_names and row[4] in skip_collection_names:
             continue
-        metadata_pickle = os.path.join(persist_dir, row[0], "index_metadata.pickle")
+        if int(chroma_version.split(".")[1]) <= 4:
+            segment_id = row[0]
+            topic = row[1]
+            collection_id = row[2]
+        else:
+            segment_id = row[0]
+            collection_id = row[1]
+            topic = f"persistent://{database}/{namespace}/{collection_id}"
+        metadata_pickle = os.path.join(persist_dir, segment_id, "index_metadata.pickle")
         if os.path.exists(metadata_pickle):
             metadata = PersistentData.load_from_file(metadata_pickle)
             wal_cleanup_queries.append(
-                f"DELETE FROM embeddings_queue WHERE seq_id < {metadata.max_seq_id} AND topic='{row[1]}';"
+                f"DELETE FROM embeddings_queue WHERE seq_id < {metadata.max_seq_id} AND topic='{topic}';"
             )
+            print("topic", topic)
         else:
             hnsw_space = cursor.execute(
                 "select str_value from collection_metadata where collection_id=? and key='hnsw:space'",
-                (row[2],),
+                (collection_id,),
             ).fetchone()
             if not hnsw_space:
                 continue
             hnsw_space = "l2" if hnsw_space is None else hnsw_space[0]
             list_of_ids = get_hnsw_index_ids(
-                f"{os.path.join(persist_dir, row[0])}", hnsw_space, row[3]
+                f"{os.path.join(persist_dir, segment_id)}", hnsw_space, row[3]
             )
             batch_size = 100
+            print(list_of_ids)
             for batch in range(0, len(list_of_ids), batch_size):
                 wal_cleanup_queries.append(
                     f"DELETE FROM embeddings_queue WHERE seq_id IN ({','.join([str(i) for i in list_of_ids[batch:batch + batch_size]])});"
