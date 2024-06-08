@@ -1,5 +1,6 @@
 import os
-from typing import List, cast
+import pickle
+from typing import List, cast, Optional, Dict
 
 import hnswlib
 
@@ -39,3 +40,42 @@ def get_dir_size(path: str) -> int:
             if os.path.exists(fp):
                 total_size += os.path.getsize(fp)
     return total_size
+
+
+SeqId = int
+
+
+# TODO this works for versions of Chroma using pickle persistent data.
+class PersistentData:
+    """Stores the data and metadata needed for a PersistentLocalHnswSegment"""
+
+    dimensionality: Optional[int]
+    total_elements_added: int
+    max_seq_id: SeqId
+
+    id_to_label: Dict[str, int]
+    label_to_id: Dict[int, str]
+    id_to_seq_id: Dict[str, SeqId]
+
+    def __init__(
+            self,
+            dimensionality: Optional[int],
+            total_elements_added: int,
+            max_seq_id: int,
+            id_to_label: Dict[str, int],
+            label_to_id: Dict[int, str],
+            id_to_seq_id: Dict[str, SeqId],
+    ):
+        self.dimensionality = dimensionality
+        self.total_elements_added = total_elements_added
+        self.max_seq_id = max_seq_id
+        self.id_to_label = id_to_label
+        self.label_to_id = label_to_id
+        self.id_to_seq_id = id_to_seq_id
+
+    @staticmethod
+    def load_from_file(filename: str) -> "PersistentData":
+        """Load persistent data from a file"""
+        with open(filename, "rb") as f:
+            ret = cast(PersistentData, pickle.load(f))
+            return ret
