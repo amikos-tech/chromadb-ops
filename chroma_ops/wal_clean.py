@@ -28,8 +28,10 @@ def clean_wal(
 
     cursor = conn.cursor()
     if int(chroma_version.split(".")[1]) <= 4:
+        collection_name_index = 4
         query = "SELECT s.id as 'segment',s.topic as 'topic', c.id as 'collection' , c.dimension as 'dimension', c.name FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
     else:
+        collection_name_index = 3
         query = "SELECT s.id as 'segment', c.id as 'collection' , c.dimension as 'dimension', c.name FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
 
     cursor.execute(query)
@@ -37,7 +39,7 @@ def clean_wal(
     results = cursor.fetchall()
     wal_cleanup_queries = []
     for row in results:
-        if skip_collection_names and row[4] in skip_collection_names:
+        if skip_collection_names and row[collection_name_index] in skip_collection_names:
             continue
         if int(chroma_version.split(".")[1]) <= 4:
             segment_id = row[0]
