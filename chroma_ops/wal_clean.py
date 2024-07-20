@@ -10,7 +10,8 @@ from chromadb import __version__ as chroma_version
 from chroma_ops.utils import (
     validate_chroma_persist_dir,
     get_hnsw_index_ids,
-    get_dir_size, PersistentData,
+    get_dir_size,
+    PersistentData,
 )
 
 
@@ -39,7 +40,10 @@ def clean_wal(
     results = cursor.fetchall()
     wal_cleanup_queries = []
     for row in results:
-        if skip_collection_names and row[collection_name_index] in skip_collection_names:
+        if (
+            skip_collection_names
+            and row[collection_name_index] in skip_collection_names
+        ):
             continue
         if int(chroma_version.split(".")[1]) <= 4:
             segment_id = row[0]

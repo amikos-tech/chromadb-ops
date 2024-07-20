@@ -102,3 +102,12 @@ def test_commit_skip_collection(records_to_add: int) -> None:
                 assert (
                     len(segment._index.get_ids_list()) != records_to_add
                 ), "Post failed"
+
+
+def test_empty_collections(capsys) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        client = chromadb.PersistentClient(path=temp_dir)
+        client.create_collection("test")
+        commit_wal(temp_dir, skip_collection_names=["test"])
+        captured = capsys.readouterr()
+        assert "Ignoring skipped collection test" in captured.err
