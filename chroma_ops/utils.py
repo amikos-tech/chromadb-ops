@@ -58,13 +58,13 @@ class PersistentData:
     id_to_seq_id: Dict[str, SeqId]
 
     def __init__(
-            self,
-            dimensionality: Optional[int],
-            total_elements_added: int,
-            max_seq_id: int,
-            id_to_label: Dict[str, int],
-            label_to_id: Dict[int, str],
-            id_to_seq_id: Dict[str, SeqId],
+        self,
+        dimensionality: Optional[int],
+        total_elements_added: int,
+        max_seq_id: int,
+        id_to_label: Dict[str, int],
+        label_to_id: Dict[int, str],
+        id_to_seq_id: Dict[str, SeqId],
     ):
         self.dimensionality = dimensionality
         self.total_elements_added = total_elements_added

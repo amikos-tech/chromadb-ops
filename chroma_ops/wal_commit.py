@@ -20,7 +20,10 @@ def commit_wal(
     """Note this uses internal ChromaDB APIs which may change at any moment."""
 
     validate_chroma_persist_dir(persist_dir)
-    client = chromadb.PersistentClient(path=persist_dir)
+    # TODO add version check and confirm with the user before proceeding
+    client = chromadb.PersistentClient(
+        path=persist_dir
+    )  # TODO we inadvetently migrate the targe DB to whatever version of Chroma is installed
     vector_segments = [
         s
         for s in client._server._sysdb.get_segments()
@@ -32,7 +35,12 @@ def commit_wal(
             s["collection"]
         )  # load the collection and apply WAL
         if skip_collection_names and col["name"] in skip_collection_names:
+            typer.echo(f"Ignoring skipped collection {col['name']}", file=sys.stderr)
             continue
+        if client._server._count(col.id) == 0:
+            typer.echo(f"Skipping empty collection {col['name']}", file=sys.stderr)
+            continue
+
         client._server._manager.hint_use_collection(
             s["collection"], Operation.ADD
         )  # Add hint to load the index into memory
