@@ -1,6 +1,6 @@
 import os
 import pickle
-from typing import List, cast, Optional, Dict
+from typing import List, cast, Optional, Dict, Union
 
 import hnswlib
 
@@ -42,6 +42,13 @@ def get_dir_size(path: str) -> int:
     return total_size
 
 
+def get_file_size(path: str) -> int:
+    # ensure it is a file
+    if not os.path.isfile(path):
+        raise ValueError(f"{path} is not a file")
+    return os.path.getsize(path)
+
+
 SeqId = int
 
 
@@ -79,3 +86,26 @@ class PersistentData:
         with open(filename, "rb") as f:
             ret = cast(PersistentData, pickle.load(f))
             return ret
+
+
+def decode_seq_id(seq_id_bytes: Union[bytes, int]) -> SeqId:
+    """Decode a byte array into a SeqID"""
+    if isinstance(seq_id_bytes, int):
+        return seq_id_bytes
+
+    if len(seq_id_bytes) == 8:
+        return int.from_bytes(seq_id_bytes, "big")
+    elif len(seq_id_bytes) == 24:
+        return int.from_bytes(seq_id_bytes, "big")
+    else:
+        raise ValueError(f"Unknown SeqID type with length {len(seq_id_bytes)}")
+
+
+# https://stackoverflow.com/a/1094933
+def sizeof_fmt(num: int, suffix: str = "B") -> str:
+    n: float = float(num)
+    for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
+        if abs(n) < 1024.0:
+            return f"{n:3.1f}{unit}{suffix}"
+        n /= 1024.0
+    return f"{n:.1f}Yi{suffix}"
