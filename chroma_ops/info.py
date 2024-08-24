@@ -110,7 +110,6 @@ def info(
                             hnsw_metadata.id_to_label
                         )
                         hnsw_params = HnswParams(collection["metadata"])
-                        print(hnsw_params)
                         index = hnswlib.Index(
                             space=hnsw_params.space, dim=collection["dimension"]
                         )
