@@ -31,12 +31,81 @@ Supported options are:
 - `--privacy-mode` (`-p`) - privacy mode hides paths and collection names so that the output can be shared without
   exposing sensitive information
 
-
 When sharing larger outputs consider storing the output in a file:
 
 ```bash
 chops info /path/to/persist_dir -p > chroma_info.txt
 ```
+
+Sample output:
+
+```console
+                                 General Info                                  
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                    Property ┃ Value                                          ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│              Chroma Version │ 0.5.5                                          │
+│        Number of Collection │ 1                                              │
+│           Persist Directory │ /tmp/tmp9l3ceuvp                               │
+│      Persist Directory Size │ 142.2MiB                                       │
+│              SystemDB size: │ 81.6MiB (/tmp/tmp9l3ceuvp/chroma.sqlite3)      │
+│     Orphan HNSW Directories │ []                                             │
+└─────────────────────────────┴────────────────────────────────────────────────┘
+───────────────────────────────── Collections ──────────────────────────────────
+───────────────────────────────────── test ─────────────────────────────────────
+                             'test' Collection Data                             
+┏━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃         Table Data ┃ Value                                                   ┃
+┡━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│                 ID │ 9e80e4fd-fd4b-47b8-810c-e8ffa57c1912                    │
+│               Name │ test                                                    │
+│           Metadata │ None                                                    │
+│          Dimension │ 1536                                                    │
+│             Tenant │ default_tenant                                          │
+│           Database │ default_database                                        │
+│            Records │ 10,000                                                  │
+│        WAL Entries │ 10,000                                                  │
+└────────────────────┴─────────────────────────────────────────────────────────┘
+─────────────────────────────────── Segments ───────────────────────────────────
+                            Metadata Segment (test)                             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                Property ┃ Value                                              ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│              Segment ID │ 832fa2cd-6c40-4eee-ad7d-35f260acaaaa               │
+│                    Type │ urn:chroma:segment/metadata/sqlite                 │
+│                   Scope │ METADATA                                           │
+│        SysDB Max Seq ID │ 10,000                                             │
+└─────────────────────────┴────────────────────────────────────────────────────┘
+                              HNSW Segment (test)                               
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                     Property ┃ Value                                         ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│                   Segment ID │ 13609103-d317-4556-a744-008c96229b72          │
+│                         Type │ urn:chroma:segment/vector/hnsw-local-persist… │
+│                        Scope │ VECTOR                                        │
+│                         Path │ /tmp/tmp9l3ceuvp/13609103-d317-4556-a744-008… │
+│             SysDB Max Seq ID │ 0                                             │
+│                HNSW Dir Size │ 60.6MiB                                       │
+│     HNSW Metadata Max Seq ID │ 10,000                                        │
+│   HNSW Metadata Total Labels │ 10,000                                        │
+│                      WAL Gap │ 0                                             │
+│ HNSW Raw Total Active Labels │ 10,000                                        │
+│    HNSW Raw Allocated Labels │ 10,000                                        │
+│           HNSW Orphan Labels │ set()                                         │
+│          Fragmentation Level │ 0.0                                           │
+└──────────────────────────────┴───────────────────────────────────────────────┘
+```
+
+⚠️ Interesting things to look for:
+
+- Fragmentation Level - the higher the value the more unnecessary memory and performance hits your HNSW index suffers.
+  It needs to be rebuilt.
+- Orphan HNSW Directories - these are directories that are not associated with any collection. They can be safely
+  deleted.
+- WAL Entries - high values usually means that you need prune your WAL. Use either this tool or
+  the [official Chroma CLI](https://cookbook.chromadb.dev/core/advanced/wal-pruning/#chroma-cli).
+- HNSW Orphan Labels - this must always be empty set, if you see anything else report it
+  in [Discord](https://discord.gg/MMeYNTmh3x).
 
 ### WAL Commit
 
