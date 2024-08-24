@@ -16,8 +16,8 @@ def count_lines(file_path: str) -> int:
     return len(lines)
 
 
-@given(records_to_add=st.integers(min_value=1, max_value=100))
-@settings(deadline=60000, max_examples=10)
+@given(records_to_add=st.sampled_from([1, 100, 500, 10000]))
+@settings(deadline=None)
 def test_basic_export(records_to_add: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)

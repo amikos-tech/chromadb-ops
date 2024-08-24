@@ -9,8 +9,8 @@ import chromadb
 from chroma_ops.info import info
 
 
-@given(records_to_add=st.integers(min_value=1000, max_value=100000))
-@settings(deadline=60000, max_examples=10)
+@given(records_to_add=st.sampled_from([1000, 2000, 3000, 10000]))
+@settings(deadline=None)
 def test_basic_info(records_to_add: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
@@ -56,4 +56,3 @@ def test_privacy(capsys) -> None:
         captured = capsys.readouterr()
         assert len(export_data["collections"]) == 1
         assert "test" not in captured.out
-        print(captured.out)

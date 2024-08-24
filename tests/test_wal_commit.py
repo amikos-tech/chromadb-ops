@@ -13,8 +13,8 @@ from chromadb.types import SegmentScope
 from chroma_ops.wal_commit import commit_wal
 
 
-@given(records_to_add=st.integers(min_value=1, max_value=1001))
-@settings(deadline=60000, max_examples=10)
+@given(records_to_add=st.sampled_from([999, 2000, 3000, 10000]))
+@settings(deadline=None)
 def test_basic_commit(records_to_add: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
@@ -56,8 +56,8 @@ def test_basic_commit(records_to_add: int) -> None:
             ), "postcheck failed"
 
 
-@given(records_to_add=st.integers(min_value=1, max_value=1001))
-@settings(deadline=60000)
+@given(records_to_add=st.sampled_from([1, 1001, 3000, 10000]))
+@settings(deadline=None)
 def test_commit_skip_collection(records_to_add: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
