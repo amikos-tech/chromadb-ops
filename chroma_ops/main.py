@@ -4,6 +4,7 @@ from chroma_ops.rebuild_fts import rebuild_fts
 from chroma_ops.wal_commit import command as commit_wal_command
 from chroma_ops.wal_clean import command as clean_wal_command
 from chroma_ops.wal_export import command as export_wal_command
+from chroma_ops.info import command as info_command
 
 app = typer.Typer(no_args_is_help=True, help="ChromaDB Ops Commands.")
 
@@ -22,5 +23,13 @@ app.command(
 app.command(
     name="rebuild-fts", help="Rebuilds Full Text Search index.", no_args_is_help=True
 )(rebuild_fts)
+
+app.command(
+    name="info",
+    help="Provide persistent Chroma DB information. "
+         "Useful to understand how your Chroma works or get support from the team.",
+    no_args_is_help=True
+)(info_command)
+
 if __name__ == "__main__":
     app()

@@ -16,6 +16,28 @@ pip install chromadb-ops
 
 ## Usage
 
+### Info
+
+Gather general information about your persistent Chroma instance. This command is useful to understand what's going on
+internally in Chroma and to get recommendations or support from the team by providing the output.
+
+```bash
+chops info /path/to/persist_dir
+```
+
+Supported options are:
+
+- `--skip-collection-names` (`-s`) - to skip specific collections
+- `--privacy-mode` (`-p`) - privacy mode hides paths and collection names so that the output can be shared without
+  exposing sensitive information
+
+
+When sharing larger outputs consider storing the output in a file:
+
+```bash
+chops info /path/to/persist_dir -p > chroma_info.txt
+```
+
 ### WAL Commit
 
 This command ensures your WAL is committed to binary vector index (HNSW).
