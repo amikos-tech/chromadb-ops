@@ -1,6 +1,5 @@
 import tempfile
 import uuid
-from time import sleep
 
 from hypothesis import given, settings
 import hypothesis.strategies as st
@@ -36,7 +35,7 @@ def test_empty_collections(capsys) -> None:
 
 def test_empty_db(capsys) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
-        client = chromadb.PersistentClient(path=temp_dir)
+        chromadb.PersistentClient(path=temp_dir)
         export_data = info(temp_dir)
         assert len(export_data["collections"]) == 0
 

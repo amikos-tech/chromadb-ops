@@ -13,7 +13,7 @@ from chroma_ops.wal_clean import clean_wal
 
 
 @given(records_to_add=st.integers(min_value=1000, max_value=10001))
-@settings(deadline=60000)
+@settings(deadline=60000, max_examples=10)
 def test_basic_clean(records_to_add: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)

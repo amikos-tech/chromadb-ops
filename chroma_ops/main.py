@@ -27,8 +27,8 @@ app.command(
 app.command(
     name="info",
     help="Provide persistent Chroma DB information. "
-         "Useful to understand how your Chroma works or get support from the team.",
-    no_args_is_help=True
+    "Useful to understand how your Chroma works or get support from the team.",
+    no_args_is_help=True,
 )(info_command)
 
 if __name__ == "__main__":
