@@ -59,17 +59,18 @@ def info(
                 "id": str(c.id),
                 "name": c.name,
                 "metadata": c.metadata,
-                "dimension": c._model.dimension,
                 "tenant": c.tenant,
                 "database": c.database,
                 "records": c.count(),
             }
             cname = c.name
             cursor = conn.cursor()
-            query = "SELECT s.* FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE c.id = ?;"
+            query = "SELECT s.*,c.* FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE c.id = ?;"
             cursor.execute(query, [collection["id"]])
             results = cursor.fetchall()
             collection["segments"] = []
+            if len(results) > 0:
+                collection["dimension"] = c._model.dimension if hasattr(c, "_model") else results[0][8]
             for row in results:
                 segment = {
                     "id": row[0],
