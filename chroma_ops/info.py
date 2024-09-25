@@ -70,7 +70,9 @@ def info(
             results = cursor.fetchall()
             collection["segments"] = []
             if len(results) > 0:
-                collection["dimension"] = c._model.dimension if hasattr(c, "_model") else results[0][8]
+                collection["dimension"] = (
+                    c._model.dimension if hasattr(c, "_model") else results[0][8]
+                )
             for row in results:
                 segment = {
                     "id": row[0],
