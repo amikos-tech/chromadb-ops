@@ -30,6 +30,7 @@ pytest = "^7.4.3"
 black = "23.3.0"
 pre-commit = "^3.6.0"
 hypothesis = "^6.92.0"
+chromadb = { version = ">=0.4.0,<0.6.0" }
 
 [tool.mypy]
 python_version = "3.9"
