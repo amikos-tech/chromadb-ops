@@ -12,6 +12,7 @@ from chroma_ops.utils import (
     get_hnsw_index_ids,
     get_dir_size,
     PersistentData,
+    decode_seq_id,
 )
 
 
@@ -56,10 +57,18 @@ def clean_wal(
         metadata_pickle = os.path.join(persist_dir, segment_id, "index_metadata.pickle")
         if os.path.exists(metadata_pickle):
             metadata = PersistentData.load_from_file(metadata_pickle)
+            if hasattr(metadata, "max_seq_id"):
+                max_seq_id = metadata.max_seq_id
+            else:
+                max_seq_id_query_hnsw_057 = (
+                    "SELECT seq_id FROM max_seq_id WHERE segment_id = ?"
+                )
+                cursor.execute(max_seq_id_query_hnsw_057, [row[0]])
+                results = cursor.fetchall()
+                max_seq_id = decode_seq_id(results[0][0]) if len(results) > 0 else 0
             wal_cleanup_queries.append(
-                f"DELETE FROM embeddings_queue WHERE seq_id < {metadata.max_seq_id} AND topic='{topic}';"
+                f"DELETE FROM embeddings_queue WHERE seq_id < {max_seq_id} AND topic='{topic}';"
             )
-            print("topic", topic)
         else:
             hnsw_space = cursor.execute(
                 "select str_value from collection_metadata where collection_id=? and key='hnsw:space'",
@@ -72,7 +81,6 @@ def clean_wal(
                 f"{os.path.join(persist_dir, segment_id)}", hnsw_space, row[3]
             )
             batch_size = 100
-            print(list_of_ids)
             for batch in range(0, len(list_of_ids), batch_size):
                 wal_cleanup_queries.append(
                     f"DELETE FROM embeddings_queue WHERE seq_id IN ({','.join([str(i) for i in list_of_ids[batch:batch + batch_size]])});"

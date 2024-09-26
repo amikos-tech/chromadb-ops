@@ -30,11 +30,12 @@ def test_basic_commit(records_to_add: int) -> None:
 
         vector_segments = [
             client._server._manager.get_segment(s["collection"], VectorReader)
-            for s in client._server._sysdb.get_segments()
+            for s in client._server._sysdb.get_segments(collection=col.id)
             if s["scope"] == SegmentScope.VECTOR
         ]
         for segment in vector_segments:
             batch_size = segment._batch_size
+            _sync_threshold = segment._sync_threshold
             if records_to_add % batch_size == 0:
                 assert (
                     len(segment._index.get_ids_list()) == records_to_add
@@ -46,10 +47,23 @@ def test_basic_commit(records_to_add: int) -> None:
         cursor = conn.cursor()
 
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
-        assert count.fetchone()[0] == records_to_add
+        if tuple(int(part) for part in chromadb.__version__.split(".")) > (0, 5, 5):
+            if records_to_add % _sync_threshold == 0:
+                assert count.fetchone()[0] == 1
+            else:
+                assert count.fetchone()[0] <= records_to_add
+        else:
+            assert count.fetchone()[0] == records_to_add
+
         commit_wal(temp_dir)
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
-        assert count.fetchone()[0] == records_to_add
+        if tuple(int(part) for part in chromadb.__version__.split(".")) > (0, 5, 5):
+            if records_to_add % _sync_threshold == 0:
+                assert count.fetchone()[0] == 1
+            else:
+                assert count.fetchone()[0] <= records_to_add
+        else:
+            assert count.fetchone()[0] == records_to_add
         for segment in vector_segments:
             assert (
                 len(segment._index.get_ids_list()) == records_to_add
@@ -73,11 +87,12 @@ def test_commit_skip_collection(records_to_add: int) -> None:
 
         vector_segments = [
             client._server._manager.get_segment(s["collection"], VectorReader)
-            for s in client._server._sysdb.get_segments()
+            for s in client._server._sysdb.get_segments(collection=col.id)
             if s["scope"] == SegmentScope.VECTOR
         ]
         for segment in vector_segments:
             batch_size = segment._batch_size
+            _sync_threshold = segment._sync_threshold
             if records_to_add % batch_size == 0:
                 assert (
                     len(segment._index.get_ids_list()) == records_to_add
@@ -89,10 +104,22 @@ def test_commit_skip_collection(records_to_add: int) -> None:
         cursor = conn.cursor()
 
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
-        assert count.fetchone()[0] == records_to_add
+        if tuple(int(part) for part in chromadb.__version__.split(".")) > (0, 5, 5):
+            if records_to_add % _sync_threshold == 0:
+                assert count.fetchone()[0] == 1
+            else:
+                assert count.fetchone()[0] <= records_to_add
+        else:
+            assert count.fetchone()[0] == records_to_add
         commit_wal(temp_dir, skip_collection_names=["test"])
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
-        assert count.fetchone()[0] == records_to_add
+        if tuple(int(part) for part in chromadb.__version__.split(".")) > (0, 5, 5):
+            if records_to_add % _sync_threshold == 0:
+                assert count.fetchone()[0] == 1
+            else:
+                assert count.fetchone()[0] <= records_to_add
+        else:
+            assert count.fetchone()[0] == records_to_add
         for segment in vector_segments:
             if records_to_add % batch_size == 0:
                 assert (

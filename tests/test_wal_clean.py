@@ -30,7 +30,10 @@ def test_basic_clean(records_to_add: int) -> None:
         conn = sqlite3.connect(f"file:{sql_file}?mode=ro", uri=True)
         cursor = conn.cursor()
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
-        assert count.fetchone()[0] == records_to_add
+        if tuple(int(part) for part in chromadb.__version__.split(".")) > (0, 5, 5):
+            assert count.fetchone()[0] == 1
+        else:
+            assert count.fetchone()[0] == records_to_add
         clean_wal(temp_dir)
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
         assert count.fetchone()[0] < records_to_add
