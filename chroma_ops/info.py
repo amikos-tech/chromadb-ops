@@ -70,7 +70,9 @@ def info(
             results = cursor.fetchall()
             collection["segments"] = []
             if len(results) > 0:
-                collection["dimension"] = c._model.dimension if hasattr(c, "_model") else results[0][8]
+                collection["dimension"] = (
+                    c._model.dimension if hasattr(c, "_model") else results[0][8]
+                )
             for row in results:
                 segment = {
                     "id": row[0],
@@ -103,7 +105,20 @@ def info(
                         hnsw_metadata = PersistentData.load_from_file(
                             segment["segment_metadata_path"]
                         )
-                        segment["hnsw_metadata_max_seq_id"] = hnsw_metadata.max_seq_id
+                        # support chroma 0.5.7+
+                        if hasattr(hnsw_metadata, "max_seq_id"):
+                            segment[
+                                "hnsw_metadata_max_seq_id"
+                            ] = hnsw_metadata.max_seq_id
+                        else:
+                            max_seq_id_query_hnsw_057 = (
+                                "SELECT seq_id FROM max_seq_id WHERE segment_id = ?"
+                            )
+                            cursor.execute(max_seq_id_query_hnsw_057, [row[0]])
+                            results = cursor.fetchall()
+                            segment["hnsw_metadata_max_seq_id"] = (
+                                decode_seq_id(results[0][0]) if len(results) > 0 else 0
+                            )
                         segment["hnsw_metadata_total_elements"] = len(
                             hnsw_metadata.id_to_label
                         )
@@ -117,7 +132,7 @@ def info(
                         index.load_index(
                             os.path.join(segment["path"]),
                             is_persistent_index=True,
-                            max_elements=hnsw_metadata.max_seq_id,
+                            max_elements=segment["hnsw_metadata_max_seq_id"],
                         )
                         hnsw_ids = index.get_ids_list()
                         segment["hnsw_raw_total_elements"] = len(hnsw_ids)

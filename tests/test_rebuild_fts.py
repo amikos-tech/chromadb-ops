@@ -10,7 +10,7 @@ import pytest
 from chroma_ops.rebuild_fts import rebuild_fts
 
 
-def test_basic_clean() -> None:
+def test_rebuild_fts() -> None:
     records_to_add = 1
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
