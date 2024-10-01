@@ -107,6 +107,59 @@ Sample output:
 - HNSW Orphan Labels - this must always be empty set, if you see anything else report it
   in [Discord](https://discord.gg/MMeYNTmh3x).
 
+#### How to Read the output
+
+**General Info**
+
+This section presents general Chroma persistent dir info.
+
+- Chroma Version - the currently installed Chroma version.
+- Number of Collection - the number of collections in the persistent dir.
+- Persist Directory - the path to the persistent dir (if privacy mode is off).
+- Persist Directory Size - the size of the persistent dir.
+- SystemDB size - the size of the system database (if privacy mode is off the full path to the sqlite3 file is shown).
+- Orphan HNSW Directories - a list of orphan HNSW directories. These directories are present in the persistent dir but
+  are not associated with any collection.
+
+**Collections**
+
+- ID - the collection ID.
+- Name - the collection name.
+- Metadata - the metadata associated with the collection.
+- Dimension - the dimension of the embeddings in the collection. (this can be None in case no vectors are present and
+  the collection is newly created).
+- Tenant - the tenant of the collection.
+- Database - the database of the collection.
+- Records - the number of records in the collection.
+- WAL Entries - the number of WAL entries in the collection (as of 0.5.5 for new instances Chroma will clean WAL for
+  each collection periodically).
+
+**Metadata Segment**
+
+- Segment ID - the segment ID.
+- Type - the segment type.
+- Scope - the segment scope.
+- SysDB Max Seq ID - the maximum sequence ID in the system database.
+
+**HNSW Segment**
+
+- Segment ID - the segment ID.
+- Type - the segment type.
+- Scope - the segment scope.
+- Path - the path to the HNSW directory.
+- SysDB Max Seq ID - the maximum sequence ID in the system database.
+- HNSW Dir Size - the size of the HNSW directory.
+- HNSW Metadata Max Seq ID - the maximum sequence ID in the HNSW metadata.
+- HNSW Metadata Total Labels - the total number of labels in the HNSW metadata.
+- WAL Gap - the difference between the maximum sequence ID in the system database and the maximum sequence ID in the
+  HNSW
+  metadata. The gap usually represents the number of WAL entries that are not committed to the HNSW index.
+- HNSW Raw Total Active Labels - the total number of active labels in the HNSW index.
+- HNSW Raw Allocated Labels - the total number of allocated labels in the HNSW index.
+- HNSW Orphan Labels - a set of orphan labels in the HNSW index. These are labels in the HNSW index that are not visible
+  to Chroma as they are not part of the metadata. This set should always be empty, if not please report it!!!
+- Fragmentation Level - the fragmentation level of the HNSW index.
+
 ### WAL Commit
 
 This command ensures your WAL is committed to binary vector index (HNSW).
