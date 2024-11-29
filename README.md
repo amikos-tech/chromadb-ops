@@ -10,8 +10,16 @@ Before you use these tools make sure your ChromaDB persistent dir, on which you 
 
 ## Installation
 
+### Python
+
 ```bash
 pip install chromadb-ops
+```
+
+### Go
+
+```bash
+go install github.com/amikos-tech/chromadb-ops/cmd/chops
 ```
 
 ## Usage
@@ -209,6 +217,9 @@ chops clean /path/to/persist_dir
 
 > Note: The command is particularly useful for windows users where deleting collections may leave behind orphaned vector
 > segment directories due to Windows file locking.
+
+For the `go` version of the tool the command it is also possible to use `--dry-run` option to see what would be deleted
+without actually deleting anything.
 
 ### Using Docker
 
