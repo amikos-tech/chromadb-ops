@@ -199,6 +199,17 @@ This command rebuilds the full-text search index.
 chops rebuild-fts /path/to/persist_dir
 ```
 
+### Clean
+
+This command cleans up orphaned vector segment directories.
+
+```bash
+chops clean /path/to/persist_dir
+```
+
+> Note: The command is particularly useful for windows users where deleting collections may leave behind orphaned vector
+> segment directories due to Windows file locking.
+
 ### Using Docker
 
 > Note: You have to mount your persist directory into the container for the commands to work.
