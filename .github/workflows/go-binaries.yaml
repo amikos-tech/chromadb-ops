@@ -1,0 +1,73 @@
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+    releases-matrix:
+        name: Release Go Binary
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                goos: [linux, windows, darwin]
+                goarch: [amd64, arm64]
+                exclude:
+                    - goarch: arm64
+                      goos: windows 
+        steps:  
+            - name: Checkout
+              uses: actions/checkout@v3
+              with:
+                fetch-depth: 0
+            - name: Set up Go
+              uses: actions/setup-go@v4
+              with:
+                go-version-file: 'go.mod'
+            - name: Run golangci-lint
+              uses: golangci/golangci-lint-action@v3
+              with:
+                version: latest
+            - name: Test
+              run: make test
+            - name: Build
+              run: make build
+            - name: Create release
+              id: create_release
+              uses: anzz1/action-create-release@v1
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                tag_name: ${{ needs.tag-job.outputs.release-tag }}
+                release_name: ${{ steps.release_name.outputs.release_name }}
+            - name: Upload artifacts
+              id: upload_release
+              uses: actions/github-script@v3
+              with:
+                github-token: ${{secrets.GITHUB_TOKEN}}
+                script: |
+                  const path = require('path');
+                  const fs = require('fs').promises;
+                  const release_id = '${{ steps.create_release.outputs.id }}';
+      
+                  async function uploadDir(dirPath) {
+                    const entries = await fs.readdir(dirPath, { withFileTypes: true });
+                    for (const entry of entries) {
+                      const fullPath = path.join(dirPath, entry.name);
+                      if (entry.isDirectory()) {
+                        // If it's a directory, recursively upload its contents
+                        await uploadDir(fullPath);
+                      } else if (entry.name.endsWith('.zip') || entry.name.endsWith('.tar.gz')) {
+                        // If it's a zip file, upload it
+                        console.log('uploadReleaseAsset', entry.name);
+                        await github.repos.uploadReleaseAsset({
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          release_id: release_id,
+                          name: entry.name,
+                          data: await fs.readFile(fullPath)
+                        });
+                      }
+                    }
+                  }
+      
+                  await uploadDir('./artifact/release');
