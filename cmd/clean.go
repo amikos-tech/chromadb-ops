@@ -18,7 +18,7 @@ import (
 
 var CleanCommand = &cobra.Command{
 	Use:   "clean",
-	Short: "List all available collections",
+	Short: "Clean up orphanated segments",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		err := clean(cmd, args)
