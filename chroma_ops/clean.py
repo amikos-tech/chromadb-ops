@@ -27,7 +27,11 @@ def clean(persist_dir: str):
     conn.close()
     # list dirs in persist_dir
     for dir in os.listdir(persist_dir):
-        if os.path.isdir(os.path.join(persist_dir, dir)) and dir not in active_segments and os.path.exists(os.path.join(persist_dir, dir, "header.bin")):
+        if (
+            os.path.isdir(os.path.join(persist_dir, dir))
+            and dir not in active_segments
+            and os.path.exists(os.path.join(persist_dir, dir, "header.bin"))
+        ):
             print(f"Deleting orphanated segment dir: {dir}", file=sys.stderr)
             shutil.rmtree(os.path.join(persist_dir, dir))
 
