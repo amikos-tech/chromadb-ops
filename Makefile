@@ -36,7 +36,7 @@ go-lint:
 go-lint-fix:
 	@golangci-lint run --fix ./...
 
-.PHONY: go-build	
+.PHONY: go-build
 go-build:
 	@go build -tags "fts5" -ldflags "-X 'main.Version=1.0.1' -X 'main.BuildHash=$$(git log -1 --format=%h)' -X 'main.BuildDate=$$(date +%Y-%m-%d)'" -o chops
 

@@ -38,6 +38,9 @@ func ftsRebuild(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get dry-run flag")
 	}
+	if dryRun {
+		fmt.Fprintf(os.Stderr, "Note: Dry run mode enabled. No changes will be made.\n")
+	}
 
 	fmt.Fprintf(os.Stderr, "Rebuilding FTS index in %s\n", persistDir)
 
@@ -88,6 +91,10 @@ func ftsRebuild(cmd *cobra.Command, args []string) error {
 	err = queries.CreateFTS(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to create FTS")
+	}
+	err = queries.InsertFTS(ctx)
+	if err != nil {
+		return errors.Wrap(err, "failed to insert FTS")
 	}
 	if !dryRun {
 		err = tx.Commit()

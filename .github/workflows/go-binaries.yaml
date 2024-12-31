@@ -13,8 +13,8 @@ jobs:
                 goarch: [amd64, arm64]
                 exclude:
                     - goarch: arm64
-                      goos: windows 
-        steps:  
+                      goos: windows
+        steps:
             - name: Checkout
               uses: actions/checkout@v3
               with:
@@ -48,7 +48,7 @@ jobs:
                   const path = require('path');
                   const fs = require('fs').promises;
                   const release_id = '${{ steps.create_release.outputs.id }}';
-      
+
                   async function uploadDir(dirPath) {
                     const entries = await fs.readdir(dirPath, { withFileTypes: true });
                     for (const entry of entries) {
@@ -69,5 +69,5 @@ jobs:
                       }
                     }
                   }
-      
+
                   await uploadDir('./artifact/release');

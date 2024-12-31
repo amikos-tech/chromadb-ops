@@ -74,7 +74,8 @@ func TestClean(t *testing.T) {
 func TestCleanDryRun(t *testing.T) {
 	t.Cleanup(func() {
 		RootCmd.SetArgs([]string{})
-		CleanCommand.Flags().Set("dry-run", "false")
+		err := CleanCommand.Flags().Set("dry-run", "false")
+		require.NoError(t, err)
 	})
 	tempdir := t.TempDir()
 	ctx := context.Background()
