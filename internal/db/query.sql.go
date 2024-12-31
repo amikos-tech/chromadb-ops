@@ -24,6 +24,69 @@ func (q *Queries) AddDummyVectorSegment(ctx context.Context, arg AddDummyVectorS
 	return err
 }
 
+const createFTS = `-- name: CreateFTS :exec
+CREATE VIRTUAL TABLE IF NOT EXISTS embedding_fulltext_search USING fts5(string_value, tokenize='trigram')
+`
+
+func (q *Queries) CreateFTS(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, createFTS)
+	return err
+}
+
+const dropFTS = `-- name: DropFTS :exec
+DROP TABLE IF EXISTS embedding_fulltext_search
+`
+
+func (q *Queries) DropFTS(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, dropFTS)
+	return err
+}
+
+const dropFTSConfig = `-- name: DropFTSConfig :exec
+DROP TABLE IF EXISTS embedding_fulltext_search_config
+`
+
+func (q *Queries) DropFTSConfig(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, dropFTSConfig)
+	return err
+}
+
+const dropFTSContent = `-- name: DropFTSContent :exec
+DROP TABLE IF EXISTS embedding_fulltext_search_content
+`
+
+func (q *Queries) DropFTSContent(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, dropFTSContent)
+	return err
+}
+
+const dropFTSData = `-- name: DropFTSData :exec
+DROP TABLE IF EXISTS embedding_fulltext_search_data
+`
+
+func (q *Queries) DropFTSData(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, dropFTSData)
+	return err
+}
+
+const dropFTSDocsize = `-- name: DropFTSDocsize :exec
+DROP TABLE IF EXISTS embedding_fulltext_search_docsize
+`
+
+func (q *Queries) DropFTSDocsize(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, dropFTSDocsize)
+	return err
+}
+
+const dropFTSIdx = `-- name: DropFTSIdx :exec
+DROP TABLE IF EXISTS embedding_fulltext_search_idx
+`
+
+func (q *Queries) DropFTSIdx(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, dropFTSIdx)
+	return err
+}
+
 const getSegments = `-- name: GetSegments :many
 SELECT id, type, scope, collection FROM segments WHERE scope = 'VECTOR'
 `

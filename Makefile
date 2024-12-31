@@ -43,3 +43,9 @@ go-build:
 .PHONY: go-binary-tarball
 go-binary-tarball: go-build
 	@tar -czf chops-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz chops
+
+.PHONY: sqlc
+sqlc:
+	@echo "Generating SQLC code"
+	@go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest
+	@sqlc generate
