@@ -118,3 +118,17 @@ func (q *Queries) GetSegments(ctx context.Context) ([]Segment, error) {
 	}
 	return items, nil
 }
+
+const insertFTS = `-- name: InsertFTS :exec
+INSERT INTO embedding_fulltext_search (rowid, string_value) SELECT em.rowid, COALESCE(doc.string_value, '')
+FROM embeddings em
+LEFT JOIN embedding_metadata doc
+  ON em.id = doc.id
+  AND doc.key = 'chroma:document'
+GROUP BY doc.id
+`
+
+func (q *Queries) InsertFTS(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, insertFTS)
+	return err
+}

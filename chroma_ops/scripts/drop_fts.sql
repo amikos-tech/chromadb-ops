@@ -8,8 +8,8 @@ DROP TABLE IF EXISTS embedding_fulltext_search_idx;
 CREATE VIRTUAL TABLE embedding_fulltext_search USING fts5(string_value, tokenize='trigram');
 INSERT INTO embedding_fulltext_search (rowid, string_value) SELECT em.rowid, COALESCE(doc.string_value, '')
 FROM embeddings em
-LEFT JOIN embedding_metadata doc 
-  ON em.id = doc.id 
+LEFT JOIN embedding_metadata doc
+  ON em.id = doc.id
   AND doc.key = 'chroma:document'
 GROUP BY doc.id;
 COMMIT TRANSACTION;
