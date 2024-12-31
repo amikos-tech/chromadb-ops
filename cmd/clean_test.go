@@ -71,6 +71,43 @@ func TestClean(t *testing.T) {
 	require.NoDirExists(t, orphanedDir)
 }
 
+func TestCleanDryRun(t *testing.T) {
+	t.Cleanup(func() {
+		RootCmd.SetArgs([]string{})
+		CleanCommand.Flags().Set("dry-run", "false")
+	})
+	tempdir := t.TempDir()
+	ctx := context.Background()
+	schemaFile := filepath.Join("..", "schema.sql")
+	db := setupDB(t, schemaFile, tempdir)
+
+	queries := chromadb.New(db)
+	// create segment table
+
+	segmentID := uuid.New().String()
+	collectionID := uuid.New().String()
+	err := queries.AddDummyVectorSegment(ctx, chromadb.AddDummyVectorSegmentParams{
+		ID:         segmentID,
+		Collection: collectionID,
+	})
+	require.NoError(t, err)
+
+	segmentDir := filepath.Join(tempdir, segmentID)
+	err = os.MkdirAll(filepath.Join(segmentDir, "header.bin"), 0o755)
+	require.NoError(t, err)
+
+	orphanedDir := filepath.Join(tempdir, uuid.New().String())
+	err = os.MkdirAll(filepath.Join(orphanedDir, "header.bin"), 0o755)
+	require.NoError(t, err)
+
+	RootCmd.SetArgs([]string{"clean", tempdir, "--dry-run"})
+
+	err = RootCmd.ExecuteContext(ctx)
+	require.NoError(t, err)
+	require.DirExists(t, segmentDir)
+	require.DirExists(t, orphanedDir)
+}
+
 func TestCleanWithoutValidSegmentDir(t *testing.T) {
 	tempdir := t.TempDir()
 	ctx := context.Background()

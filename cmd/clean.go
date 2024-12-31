@@ -39,6 +39,9 @@ func clean(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to get dry-run flag")
 	}
+	if dryRun {
+		fmt.Fprintf(os.Stderr, "Note: Dry run mode enabled. No changes will be made.\n")
+	}
 	fmt.Fprintf(os.Stderr, "Cleaning orphanated segments in %s\n", persistDir)
 
 	ctx := context.Background()
