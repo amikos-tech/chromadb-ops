@@ -54,7 +54,11 @@ func ftsRebuild(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to begin exclusive transaction")
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := tx.Rollback(); err != nil {
+			fmt.Fprintf(os.Stderr, "failed to rollback transaction: %v\n", err)
+		}
+	}()
 
 	queries := chromadb.New(db)
 	err = queries.DropFTS(ctx)
