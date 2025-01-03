@@ -122,6 +122,7 @@ func TestFtsRebuild(t *testing.T) {
 	stopDuration := 10 * time.Second
 	err = chromaContainer.Stop(ctx, &stopDuration)
 	require.NoError(t, err)
+	time.Sleep(10 * time.Second)
 	RootCmd.SetArgs([]string{"fts", "rebuild", tempDir})
 	err = RootCmd.ExecuteContext(ctx)
 	require.NoError(t, err)
