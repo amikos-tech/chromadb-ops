@@ -202,6 +202,8 @@ func TestFtsChangeTokenizer(t *testing.T) {
 	results, err := collection.Get(ctx, nil, wmap, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(results.Ids))
+	err = chromaContainer.Terminate(ctx)
+	require.NoError(t, err)
 
 	t.Run("Test Wrong Tokenizer", func(t *testing.T) {
 		RootCmd.SetArgs([]string{"fts", "rebuild", "-t", "wrong", tempDir})
