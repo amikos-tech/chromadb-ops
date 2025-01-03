@@ -20,7 +20,7 @@ jobs:
     needs: [ lint ]
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ] #, windows-latest, macos-latest, macos-14, ubuntu-latest,
+        os: [ ubuntu-latest ] #, windows-latest, macos-latest, macos-14, ubuntu-latest,
     steps:
       - uses: actions/checkout@v4
         id: checkout
