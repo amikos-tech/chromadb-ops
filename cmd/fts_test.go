@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -118,9 +119,10 @@ func TestFtsRebuild(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(results.Ids))
 	require.Equal(t, "ID2", results.Ids[0])
-
-	err = chromaContainer.Terminate(ctx)
+	stopDuration := 10 * time.Second
+	err = chromaContainer.Stop(ctx, &stopDuration)
 	require.NoError(t, err)
+	time.Sleep(10 * time.Second)
 	RootCmd.SetArgs([]string{"fts", "rebuild", tempDir})
 	err = RootCmd.ExecuteContext(ctx)
 	require.NoError(t, err)
@@ -202,6 +204,8 @@ func TestFtsChangeTokenizer(t *testing.T) {
 	results, err := collection.Get(ctx, nil, wmap, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(results.Ids))
+	err = chromaContainer.Terminate(ctx)
+	require.NoError(t, err)
 
 	t.Run("Test Wrong Tokenizer", func(t *testing.T) {
 		RootCmd.SetArgs([]string{"fts", "rebuild", "-t", "wrong", tempDir})
