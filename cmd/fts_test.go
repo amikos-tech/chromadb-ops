@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -118,8 +119,8 @@ func TestFtsRebuild(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(results.Ids))
 	require.Equal(t, "ID2", results.Ids[0])
-
-	err = chromaContainer.Terminate(ctx)
+	stopDuration := 10 * time.Second
+	err = chromaContainer.Stop(ctx, &stopDuration)
 	require.NoError(t, err)
 	RootCmd.SetArgs([]string{"fts", "rebuild", tempDir})
 	err = RootCmd.ExecuteContext(ctx)
