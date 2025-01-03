@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"database/sql"
 
@@ -13,6 +14,15 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+)
+
+type tokenizerType string
+
+const (
+	tokenizerUnicode61 tokenizerType = "unicode61"
+	tokenizerTrigram   tokenizerType = "trigram"
+	tokenizerPorter    tokenizerType = "porter"
+	tokenizerAscii     tokenizerType = "ascii"
 )
 
 var FTSCommand = &cobra.Command{
@@ -29,6 +39,22 @@ var ftsRebuildCommand = &cobra.Command{
 	},
 }
 
+func validateTokenizer(s string) (string, error) {
+	if strings.HasPrefix(s, string(tokenizerUnicode61)) {
+		return string(s), nil
+	}
+	if strings.HasPrefix(s, string(tokenizerTrigram)) {
+		return string(s), nil
+	}
+	if strings.HasPrefix(s, string(tokenizerPorter)) {
+		return string(s), nil
+	}
+	if strings.HasPrefix(s, string(tokenizerAscii)) {
+		return string(s), nil
+	}
+	return "", fmt.Errorf("invalid tokenizer: %s. Supported values 'unicode61', 'trigram', 'porter' and 'ascii'. See https://www.sqlite.org/fts5.html#tokenizers", s)
+}
+
 func ftsRebuild(cmd *cobra.Command, args []string) error {
 	persistDir := args[0]
 	if err := chroma.CheckPersistDir(persistDir); err != nil {
@@ -41,8 +67,16 @@ func ftsRebuild(cmd *cobra.Command, args []string) error {
 	if dryRun {
 		fmt.Fprintf(os.Stderr, "Note: Dry run mode enabled. No changes will be made.\n")
 	}
+	_tokenizer, err := cmd.Flags().GetString("tokenizer")
+	if err != nil {
+		return errors.Wrap(err, "failed to get tokenizer flag")
+	}
+	tokenizer, err := validateTokenizer(_tokenizer)
+	if err != nil {
+		return err
+	}
 
-	fmt.Fprintf(os.Stderr, "Rebuilding FTS index in %s\n", persistDir)
+	fmt.Fprintf(os.Stderr, "Rebuilding FTS index for %s with tokenizer: '%s'\n", persistDir, tokenizer)
 
 	ctx := context.Background()
 
@@ -51,15 +85,16 @@ func ftsRebuild(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-
-	tx := chromadb.NewTx(db, ctx)
-	err = tx.BeginExclusive()
+	_, err = db.ExecContext(ctx, "BEGIN EXCLUSIVE")
 	if err != nil {
 		return errors.Wrap(err, "failed to begin exclusive transaction")
 	}
+	var commited = false
 	defer func() {
-		if err := tx.Rollback(); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to rollback transaction: %v\n", err)
+		if !commited {
+			if _, err := db.ExecContext(ctx, "ROLLBACK"); err != nil {
+				fmt.Fprintf(os.Stderr, "failed to rollback transaction: %v\n", err)
+			}
 		}
 	}()
 
@@ -88,6 +123,10 @@ func ftsRebuild(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to drop FTS idx")
 	}
+	_, err = db.ExecContext(ctx, fmt.Sprintf("CREATE VIRTUAL TABLE IF NOT EXISTS embedding_fulltext_search USING fts5(string_value, tokenize='%s')", tokenizer))
+	if err != nil {
+		return errors.Wrap(err, "failed to create FTS")
+	}
 	err = queries.CreateFTS(ctx)
 	if err != nil {
 		return errors.Wrap(err, "failed to create FTS")
@@ -97,10 +136,11 @@ func ftsRebuild(cmd *cobra.Command, args []string) error {
 		return errors.Wrap(err, "failed to insert FTS")
 	}
 	if !dryRun {
-		err = tx.Commit()
+		_, err = db.ExecContext(ctx, "COMMIT")
 		if err != nil {
 			return errors.Wrap(err, "failed to commit transaction")
 		}
+		commited = true
 	}
 	return nil
 }
@@ -108,5 +148,6 @@ func ftsRebuild(cmd *cobra.Command, args []string) error {
 func init() {
 	FTSCommand.AddCommand(ftsRebuildCommand)
 	ftsRebuildCommand.Flags().BoolP("dry-run", "d", false, "Dry run the operation")
+	ftsRebuildCommand.Flags().StringP("tokenizer", "t", "trigram", "Tokenizer to use for FTS. Supported values 'unicode61', 'trigram', 'porter' and 'ascii'. See https://www.sqlite.org/fts5.html#tokenizers")
 	RootCmd.AddCommand(FTSCommand)
 }

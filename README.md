@@ -196,15 +196,29 @@ chops export-wal /path/to/persist_dir --out /path/to/export.jsonl
 
 > Note: If --out or -o is not specified the command will print the output to stdout.
 
-### Full-Text Search Index Rebuild
+### Full-Text Search (FTS) Index Rebuild
 
 This command rebuilds the full-text search index.
 
 > Note: **_Why is this needed_**? Users have reported broken FTS indices that result in a error of this
 > kind: `no such table: embedding_fulltext_search`
 
+#### Python
+
 ```bash
 chops rebuild-fts /path/to/persist_dir
+```
+
+#### Go
+
+```bash
+chops fts rebuild /path/to/persist_dir
+```
+
+Change the tokenizer to `unicode61` by passing `--tokenizer unicode61` (or `-t unicode61`) option.
+
+```bash
+chops fts rebuild --tokenizer unicode61 /path/to/persist_dir 
 ```
 
 ### Clean
