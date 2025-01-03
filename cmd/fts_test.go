@@ -49,7 +49,7 @@ func getChromaContainerAndClient(t *testing.T, chromaImage, chromaVersion, tempD
 	if chromaURL == "" {
 		chromaURL = endpoint
 	}
-	chromaClient, err := chroma.NewClient(chromaURL)
+	chromaClient, err := chroma.NewClient(chromaURL, chroma.WithDebug(true))
 	require.NoError(t, err)
 	return chromaContainer, chromaClient
 }
@@ -196,10 +196,9 @@ func TestFtsChangeTokenizer(t *testing.T) {
 	_, deleteError := collection.Delete(context.Background(), []string{"ID1"}, nil, nil)
 	require.NoError(t, deleteError)
 	wb := wheredoc.NewWhereDocumentBuilder()
-	wb.Contains("신흥")
+	wb.Contains("순매")
 	wmap, err := wb.Build()
 	require.NoError(t, err)
-
 	results, err := collection.Get(ctx, nil, wmap, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(results.Ids))
