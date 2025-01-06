@@ -24,11 +24,6 @@ import (
 )
 
 func getChromaContainerAndClient(t *testing.T, chromaImage, chromaVersion, tempDir string, ctx context.Context) (*tcchroma.ChromaContainer, *chroma.Client) {
-	cmd := exec.Command("chmod", "777", tempDir)
-	err := cmd.Run()
-	if err != nil {
-		t.Fatalf("Failed to change permissions of the temp directory: %v", err)
-	}
 	chromaContainer, err := tcchroma.Run(ctx,
 		fmt.Sprintf("%s:%s", chromaImage, chromaVersion),
 		testcontainers.WithEnv(map[string]string{"ALLOW_RESET": "true"}),
@@ -129,6 +124,9 @@ func TestFtsRebuild(t *testing.T) {
 	err = chromaContainer.Stop(ctx, &stopDuration)
 	require.NoError(t, err)
 	time.Sleep(10 * time.Second)
+	cmd := exec.Command("chmod", "-R", "777", tempDir)
+	err = cmd.Run()
+	require.NoError(t, err)
 	RootCmd.SetArgs([]string{"fts", "rebuild", tempDir})
 	err = RootCmd.ExecuteContext(ctx)
 	require.NoError(t, err)
