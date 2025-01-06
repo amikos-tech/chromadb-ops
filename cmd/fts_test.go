@@ -124,7 +124,7 @@ func TestFtsRebuild(t *testing.T) {
 	err = chromaContainer.Stop(ctx, &stopDuration)
 	require.NoError(t, err)
 	time.Sleep(10 * time.Second)
-	cmd := exec.Command("chmod", "-R", "777", tempDir)
+	cmd := exec.Command("sudo", "chmod", "-R", "777", tempDir)
 	err = cmd.Run()
 	require.NoError(t, err)
 	RootCmd.SetArgs([]string{"fts", "rebuild", tempDir})
