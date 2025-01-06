@@ -56,6 +56,12 @@ func getChromaContainerAndClient(t *testing.T, chromaImage, chromaVersion, tempD
 	return chromaContainer, chromaClient
 }
 
+func changeTempDirPermissions(t *testing.T, tempDir string) {
+	cmd := exec.Command("sudo", "chmod", "-R", "777", tempDir)
+	err := cmd.Run()
+	require.NoError(t, err)
+}
+
 func TestFtsRebuild(t *testing.T) {
 	tempDir := t.TempDir()
 	ctx := context.Background()
@@ -123,10 +129,7 @@ func TestFtsRebuild(t *testing.T) {
 	stopDuration := 10 * time.Second
 	err = chromaContainer.Stop(ctx, &stopDuration)
 	require.NoError(t, err)
-	time.Sleep(10 * time.Second)
-	cmd := exec.Command("sudo", "chmod", "-R", "777", tempDir)
-	err = cmd.Run()
-	require.NoError(t, err)
+	changeTempDirPermissions(t, tempDir)
 	RootCmd.SetArgs([]string{"fts", "rebuild", tempDir})
 	err = RootCmd.ExecuteContext(ctx)
 	require.NoError(t, err)
@@ -208,7 +211,12 @@ func TestFtsChangeTokenizer(t *testing.T) {
 	results, err := collection.Get(ctx, nil, wmap, nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, 0, len(results.Ids))
-	err = chromaContainer.Terminate(ctx)
+	stopDuration := 10 * time.Second
+	err = chromaContainer.Stop(ctx, &stopDuration)
+	require.NoError(t, err)
+	changeTempDirPermissions(t, tempDir)
+	RootCmd.SetArgs([]string{"fts", "rebuild", tempDir})
+	err = RootCmd.ExecuteContext(ctx)
 	require.NoError(t, err)
 
 	t.Run("Test Wrong Tokenizer", func(t *testing.T) {
