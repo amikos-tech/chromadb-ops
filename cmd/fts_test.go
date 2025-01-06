@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"os/user"
 	"path/filepath"
 	"testing"
 	"time"
@@ -23,6 +24,8 @@ import (
 )
 
 func getChromaContainerAndClient(t *testing.T, chromaImage, chromaVersion, tempDir string, ctx context.Context) (*tcchroma.ChromaContainer, *chroma.Client) {
+	currentUser, err := user.Current()
+	require.NoError(t, err)
 	chromaContainer, err := tcchroma.Run(ctx,
 		fmt.Sprintf("%s:%s", chromaImage, chromaVersion),
 		testcontainers.WithEnv(map[string]string{"ALLOW_RESET": "true"}),
@@ -31,6 +34,7 @@ func getChromaContainerAndClient(t *testing.T, chromaImage, chromaVersion, tempD
 				WaitingFor: wait.ForAll(
 					wait.ForListeningPort("8000/tcp"),
 				),
+				User: fmt.Sprintf("%s:%s", currentUser.Uid, currentUser.Gid),
 				HostConfigModifier: func(hostConfig *container.HostConfig) {
 					hostConfig.Mounts = []mount.Mount{
 						{
