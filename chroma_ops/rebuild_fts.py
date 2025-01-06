@@ -11,8 +11,15 @@ from chroma_ops.utils import validate_chroma_persist_dir, read_script
 
 def validate_tokenizer(tokenizer: str) -> None:
     valid_tokenizers = ["trigram", "unicode61", "ascii", "porter"]
-    if not tokenizer.startswith("trigram") and not tokenizer.startswith("unicode61") and not tokenizer.startswith("ascii") and not tokenizer.startswith("porter"):
-        raise ValueError(f"Invalid tokenizer. Must be one of: {', '.join(valid_tokenizers)}. See https://www.sqlite.org/fts5.html#tokenizers")
+    if (
+        not tokenizer.startswith("trigram")
+        and not tokenizer.startswith("unicode61")
+        and not tokenizer.startswith("ascii")
+        and not tokenizer.startswith("porter")
+    ):
+        raise ValueError(
+            f"Invalid tokenizer. Must be one of: {', '.join(valid_tokenizers)}. See https://www.sqlite.org/fts5.html#tokenizers"
+        )
 
 
 def rebuild_fts(persist_dir: str, tokenizer: str = "trigram") -> None:
@@ -59,6 +66,11 @@ def command(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("persist_dir", type=str)
-    parser.add_argument("--tokenizer", type=str, default="trigram", help="The tokenizer to use for the FTS index. Supported values: 'trigram', 'unicode61', 'ascii', 'porter'. See https://www.sqlite.org/fts5.html#tokenizers")
+    parser.add_argument(
+        "--tokenizer",
+        type=str,
+        default="trigram",
+        help="The tokenizer to use for the FTS index. Supported values: 'trigram', 'unicode61', 'ascii', 'porter'. See https://www.sqlite.org/fts5.html#tokenizers",
+    )
     arg = parser.parse_args()
     rebuild_fts(arg.persist_dir, arg.tokenizer)

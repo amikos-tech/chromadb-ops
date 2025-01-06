@@ -52,8 +52,8 @@ def test_rebuild_fts_with_unicode61() -> None:
             "Dogs are loyal friends",
             "Birds are beautiful creatures",
             "Fish are fascinating underwater",
-		    "Bears are powerful animals",
-		    "Elephants are intelligent giants",
+            "Bears are powerful animals",
+            "Elephants are intelligent giants",
             "주요 신흥 4개국 증시 외국인투자자 순매수액",
             "Tigers are majestic predators",
         ]
@@ -65,7 +65,9 @@ def test_rebuild_fts_with_unicode61() -> None:
         sql_file = os.path.join(temp_dir, "chroma.sqlite3")
         conn = sqlite3.connect(sql_file)
         cursor = conn.cursor()
-        res = cursor.execute("select sql from sqlite_master where name = 'embedding_fulltext_search'")
+        res = cursor.execute(
+            "select sql from sqlite_master where name = 'embedding_fulltext_search'"
+        )
         assert "trigram" in res.fetchone()[0]
         shutil.copy2(sql_file, os.path.join(".", "chroma_before.sqlite3"))
         assert len(res_before["ids"]) == 1
@@ -80,5 +82,7 @@ def test_rebuild_fts_with_unicode61() -> None:
         sql_file = os.path.join(fixed_temp_dir, "chroma.sqlite3")
         conn = sqlite3.connect(sql_file)
         cursor = conn.cursor()
-        res = cursor.execute("select sql from sqlite_master where name = 'embedding_fulltext_search'")
+        res = cursor.execute(
+            "select sql from sqlite_master where name = 'embedding_fulltext_search'"
+        )
         assert "unicode61" in res.fetchone()[0]
