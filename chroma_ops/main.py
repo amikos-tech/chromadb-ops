@@ -6,6 +6,7 @@ from chroma_ops.wal_clean import command as clean_wal_command
 from chroma_ops.wal_export import command as export_wal_command
 from chroma_ops.info import command as info_command
 from chroma_ops.clean import command as clean_command
+from chroma_ops.hnsw import hnsw_commands
 
 app = typer.Typer(no_args_is_help=True, help="ChromaDB Ops Commands.")
 
@@ -37,6 +38,8 @@ app.command(
     help="Clean up orphaned vector segment directories.",
     no_args_is_help=True,
 )(clean_command)
+
+app.add_typer(hnsw_commands, name="hnsw", help="HNSW index maintenance commands")
 
 if __name__ == "__main__":
     app()
