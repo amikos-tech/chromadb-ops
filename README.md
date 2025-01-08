@@ -257,6 +257,7 @@ chops hnsw info /path/to/persist_dir --collection <collection_name>
 Additional options:
 
 - `--database` (`-d`) - the database name (default: `default_database`)
+- `--verbose` (`-v`) - If specified, the HNSW index will be loaded for more accurate fragmentation level reporting.
 
 #### Rebuild
 
