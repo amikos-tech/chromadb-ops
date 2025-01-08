@@ -7,7 +7,7 @@ import uuid
 import chromadb
 import pytest
 
-from chroma_ops.rebuild_fts import rebuild_fts
+from chroma_ops.fts import rebuild_fts
 
 
 def test_rebuild_fts() -> None:

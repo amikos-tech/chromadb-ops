@@ -1,4 +1,3 @@
-import argparse
 import os
 import sqlite3
 import sys
@@ -8,6 +7,8 @@ import typer
 
 from chroma_ops.utils import validate_chroma_persist_dir, read_script
 
+
+fts_commands = typer.Typer()
 
 def validate_tokenizer(tokenizer: str) -> None:
     valid_tokenizers = ["trigram", "unicode61", "ascii", "porter"]
@@ -51,7 +52,7 @@ def rebuild_fts(persist_dir: str, tokenizer: str = "trigram") -> None:
         )
 
 
-def command(
+def rebuild_command(
     persist_dir: str = typer.Argument(..., help="The persist directory"),
     tokenizer: str = typer.Option(
         "trigram",
@@ -63,14 +64,6 @@ def command(
     rebuild_fts(persist_dir, tokenizer)
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("persist_dir", type=str)
-    parser.add_argument(
-        "--tokenizer",
-        type=str,
-        default="trigram",
-        help="The tokenizer to use for the FTS index. Supported values: 'trigram', 'unicode61', 'ascii', 'porter'. See https://www.sqlite.org/fts5.html#tokenizers",
-    )
-    arg = parser.parse_args()
-    rebuild_fts(arg.persist_dir, arg.tokenizer)
+fts_commands.command(
+    name="rebuild", help="Rebuilds Full Text Search index.", no_args_is_help=True
+)(rebuild_command)
