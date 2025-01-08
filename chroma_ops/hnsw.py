@@ -1,19 +1,15 @@
-import argparse
 import datetime
 import json
 import os
-import pickle
 import shutil
 import sqlite3
 import tempfile
 import traceback
 from typing import Any, Dict, Optional, TypedDict
-import numpy as np
 import hnswlib
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
-from rich.rule import Rule
 from rich.table import Table
 from chroma_ops.utils import (
     validate_chroma_persist_dir,
@@ -312,23 +308,3 @@ hnsw_commands.command(
     no_args_is_help=True,
 )(info_hnsw_command)
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    subparsers = parser.add_subparsers(dest='hnsw', help='Available commands')
-    
-    # Setup command groups
-    rebuild = subparsers.add_parser('rebuild', help='Rebuild the HNSW index')
-    rebuild.add_argument("persist_dir", type=str)
-    rebuild.add_argument("collection_name", type=str)
-    rebuild.add_argument("-d", "--database", type=str, default="default_database")
-    rebuild.set_defaults(func=rebuild_hnsw_command)
-    info = subparsers.add_parser('info', help='Info about the HNSW index')
-    info.add_argument("persist_dir", type=str)
-    info.add_argument("collection_name", type=str)
-    info.add_argument("-d", "--database", type=str, default="default_database")
-    info.add_argument("-v", "--verbose", type=bool, default=False)
-    info.set_defaults(func=info_hnsw_command)
-    args = parser.parse_args()
-    if hasattr(args, 'func'):
-        args.func(args)
-    

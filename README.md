@@ -206,13 +206,13 @@ This command rebuilds the full-text search index.
 #### Python
 
 ```bash
-chops rebuild-fts /path/to/persist_dir
+chops fts rebuild /path/to/persist_dir
 ```
 
 Change the tokenizer to `unicode61` by passing `--tokenizer unicode61` (or `-t unicode61`) option.
 
 ```bash
-chops rebuild-fts --tokenizer unicode61 /path/to/persist_dir
+chops fts rebuild --tokenizer unicode61 /path/to/persist_dir
 ```
 
 > See [SQLite FTS5 Tokenizers](https://www.sqlite.org/fts5.html#tokenizers) for more information and available tokenizers and their options.
