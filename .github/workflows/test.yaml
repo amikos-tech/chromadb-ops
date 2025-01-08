@@ -35,4 +35,4 @@ jobs:
         run: |
           set -e
           poetry update --with dev
-          poetry run pytest
+          poetry run pytest -n auto

@@ -245,6 +245,32 @@ chops clean /path/to/persist_dir
 For the `go` version of the tool the command it is also possible to use `--dry-run` option to see what would be deleted
 without actually deleting anything.
 
+
+### HNSW Maintenance
+
+#### Info
+
+```bash
+chops hnsw info /path/to/persist_dir --collection <collection_name>
+```
+
+Additional options:
+
+- `--database` (`-d`) - the database name (default: `default_database`)
+- `--verbose` (`-v`) - If specified, the HNSW index will be loaded for more accurate fragmentation level reporting.
+
+#### Rebuild
+
+```bash
+chops hnsw rebuild /path/to/persist_dir --collection <collection_name>
+```
+
+Additional options:
+
+- `--backup` (`-b`) - backup the old index. At the end of the rebuild process the location of the backed up index will be printed out. (default: `True`)
+- `--database` (`-d`) - the database name (default: `default_database`)
+- `--yes` (`-y`) - skip confirmation prompt
+
 ### Using Docker
 
 > Note: You have to mount your persist directory into the container for the commands to work.
