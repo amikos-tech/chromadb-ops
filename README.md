@@ -221,6 +221,28 @@ chops wal export /path/to/persist_dir --out /path/to/export.jsonl
 > [!NOTE]
 > Coming soon
 
+
+#### Configuration
+
+This command helps you configure Chroma WAL behavior.
+
+**Python:**
+
+```bash
+chops wal config /path/to/persist_dir --purge auto
+```
+
+Options:
+
+- `--purge` option can be set to `auto` (automatically purge the WAL when the number of records in the collection exceeds the number of
+  records in the WAL) or `off` (disable automatic purge of the WAL). Automatic WAL purge is enabled by default. The automatic purge keeps your slite3 file smaller and faster, but it makes it hard or impossible to restore Chroma.
+- `--yes` option can be set to `true` (skip confirmation prompt) or `false` (show confirmation prompt). The default is `false`.
+
+**Go:**
+
+> [!NOTE]
+> Coming soon
+
 ### Full-Text Search (FTS) Maintenance
 
 #### Rebuild
