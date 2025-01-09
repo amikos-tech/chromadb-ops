@@ -16,7 +16,7 @@ import hypothesis.strategies as st
     number_of_collections=st.integers(min_value=1, max_value=10),
 )
 @settings(deadline=None)
-def test_clean(records_to_add: int, number_of_collections: int):
+def test_clean(records_to_add: int, number_of_collections: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
         for i in range(number_of_collections):

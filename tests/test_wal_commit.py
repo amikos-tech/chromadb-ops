@@ -9,6 +9,7 @@ import hypothesis.strategies as st
 import chromadb
 from chromadb.segment import VectorReader
 from chromadb.types import SegmentScope
+from pytest import CaptureFixture
 
 from chroma_ops.wal_commit import commit_wal
 
@@ -131,7 +132,7 @@ def test_commit_skip_collection(records_to_add: int) -> None:
                 ), "Post failed"
 
 
-def test_empty_collections(capsys) -> None:
+def test_empty_collections(capsys: CaptureFixture[str]) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
         client.create_collection("test")

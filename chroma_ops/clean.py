@@ -3,13 +3,12 @@ import os
 import shutil
 import sqlite3
 import sys
-import uuid
 
 import typer
 from chroma_ops.utils import validate_chroma_persist_dir
 
 
-def clean(persist_dir: str):
+def clean(persist_dir: str) -> None:
     validate_chroma_persist_dir(persist_dir)
     sql_file = os.path.join(persist_dir, "chroma.sqlite3")
     conn = sqlite3.connect(f"file:{sql_file}?mode=ro", uri=True)

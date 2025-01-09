@@ -1,4 +1,3 @@
-import argparse
 import base64
 import json
 import os
@@ -56,11 +55,3 @@ def command(
     out: str = typer.Option(None, "--out", "-o", help="The output jsonl file"),
 ) -> None:
     export_wal(persist_dir, out)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("persist_dir", type=str)
-    parser.add_argument("--out", type=str, default=None)
-    arg = parser.parse_args()
-    export_wal(arg.persist_dir, arg.out)
