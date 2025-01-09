@@ -1,6 +1,5 @@
 import json
 import os
-import shutil
 import tempfile
 from typing import Optional
 import uuid
@@ -15,9 +14,12 @@ from chroma_ops.utils import SqliteMode, get_sqlite_connection
 from chroma_ops.wal_config import PurgeFlag, config_wal
 
 
-@given(records_to_add=st.integers(min_value=100, max_value=10000), purge=st.one_of(st.none(), st.just(PurgeFlag.OFF), st.just(PurgeFlag.AUTO)))
+@given(
+    records_to_add=st.integers(min_value=100, max_value=10000),
+    purge=st.one_of(st.none(), st.just(PurgeFlag.OFF), st.just(PurgeFlag.AUTO)),
+)
 @settings(deadline=None, max_examples=10)
-def test_wal_config(records_to_add: int, purge: Optional[PurgeFlag])->None:
+def test_wal_config(records_to_add: int, purge: Optional[PurgeFlag]) -> None:
     sync_threshold = 1000
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=os.path.join(temp_dir, "original"))
@@ -25,33 +27,52 @@ def test_wal_config(records_to_add: int, purge: Optional[PurgeFlag])->None:
         ids = [f"{uuid.uuid4()}" for _ in range(records_to_add)]
         embeddings = np.random.uniform(0, 1, (records_to_add, 384))
         col.add(ids=ids, embeddings=embeddings)
-        conn = get_sqlite_connection(os.path.join(temp_dir, "original"), SqliteMode.READ_WRITE)
+        conn = get_sqlite_connection(
+            os.path.join(temp_dir, "original"), SqliteMode.READ_WRITE
+        )
         cursor = conn.cursor()
         rows = cursor.execute("SELECT count(*) FROM embeddings_queue;").fetchone()
         assert rows[0] >= 1 and rows[0] <= sync_threshold
-        config = json.loads(cursor.execute("SELECT config_json_str FROM embeddings_queue_config;").fetchone()[0])
-        assert config["automatically_purge"] == True
+        config = json.loads(
+            cursor.execute(
+                "SELECT config_json_str FROM embeddings_queue_config;"
+            ).fetchone()[0]
+        )
+        assert config["automatically_purge"] is True
         cursor.close()
         conn.close()
         client._admin_client.clear_system_cache()
 
         config_wal(os.path.join(temp_dir, "original"), purge=purge, yes=True)
-        
+
         client = chromadb.PersistentClient(path=os.path.join(temp_dir, "original"))
         col = client.get_collection("test_collection")
         new_ids = [f"{uuid.uuid4()}" for _ in range(records_to_add)]
         embeddings = np.random.uniform(0, 1, (records_to_add, 384))
         col.add(ids=new_ids, embeddings=embeddings)
 
-
-        conn = get_sqlite_connection(os.path.join(temp_dir, "original"), SqliteMode.READ_WRITE)
+        conn = get_sqlite_connection(
+            os.path.join(temp_dir, "original"), SqliteMode.READ_WRITE
+        )
         cursor = conn.cursor()
-        config = json.loads(cursor.execute("SELECT config_json_str FROM embeddings_queue_config;").fetchone()[0])
-        assert config["automatically_purge"] == False if purge is not None and purge == PurgeFlag.OFF else True
-        config = json.loads(cursor.execute("SELECT config_json_str FROM embeddings_queue_config;").fetchone()[0])
+        config = json.loads(
+            cursor.execute(
+                "SELECT config_json_str FROM embeddings_queue_config;"
+            ).fetchone()[0]
+        )
+        assert (
+            config["automatically_purge"] is False
+            if purge is not None and purge == PurgeFlag.OFF
+            else True
+        )
+        config = json.loads(
+            cursor.execute(
+                "SELECT config_json_str FROM embeddings_queue_config;"
+            ).fetchone()[0]
+        )
         rows = cursor.execute("SELECT count(*) FROM embeddings_queue;").fetchone()
         if purge is not None and purge == PurgeFlag.OFF:
-                assert rows[0] >= records_to_add + 1
+            assert rows[0] >= records_to_add + 1
         else:
             assert rows[0] >= 1 and rows[0] <= sync_threshold
         cursor.close()
@@ -66,10 +87,16 @@ def test_wal_config(records_to_add: int, purge: Optional[PurgeFlag])->None:
         embeddings = np.random.uniform(0, 1, (records_to_add, 384))
         col.add(ids=new_ids, embeddings=embeddings)
 
-        conn = get_sqlite_connection(os.path.join(temp_dir, "original"), SqliteMode.READ_WRITE)
+        conn = get_sqlite_connection(
+            os.path.join(temp_dir, "original"), SqliteMode.READ_WRITE
+        )
         cursor = conn.cursor()
-        config = json.loads(cursor.execute("SELECT config_json_str FROM embeddings_queue_config;").fetchone()[0])
-        assert config["automatically_purge"] == True
+        config = json.loads(
+            cursor.execute(
+                "SELECT config_json_str FROM embeddings_queue_config;"
+            ).fetchone()[0]
+        )
+        assert config["automatically_purge"] is True
         rows = cursor.execute("SELECT count(*) FROM embeddings_queue;").fetchone()
         assert rows[0] >= 1 and rows[0] <= sync_threshold
         cursor.close()
