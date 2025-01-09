@@ -1,12 +1,12 @@
-# ChromaDB Operations Tools
+# Chroma Operations Tools
 
-Tiny collection of utilities to help you managed ChromaDB indices.
+Tiny collection of utilities to help you managed single-node Chroma instances.
 
-WARNING: These tools rely on internal ChromaDB APIs and may break in the future.
+> [!TIP]
+> chroma ops tool relies on internal ChromaDB APIs and breaking changes with new version of Chroma are possible.
 
-## ☠️☠️☠️ BEFORE YOU BEGIN ☠️☠️☠️
-
-Before you use these tools make sure your ChromaDB persistent dir, on which you intend to run these tools, is backed up.
+> [!WARNING]
+> Before you use these tools make sure your Chroma persistent dir, on which you intend to run these tools, is backed up.
 
 ## Installation
 
@@ -25,7 +25,6 @@ go install github.com/amikos-tech/chromadb-ops/cmd/chops
 ## Usage
 
 ### Info
-
 Gather general information about your persistent Chroma instance. This command is useful to understand what's going on
 internally in Chroma and to get recommendations or support from the team by providing the output.
 
@@ -250,6 +249,8 @@ without actually deleting anything.
 
 #### Info
 
+##### Python
+
 ```bash
 chops hnsw info /path/to/persist_dir --collection <collection_name>
 ```
@@ -259,7 +260,14 @@ Additional options:
 - `--database` (`-d`) - the database name (default: `default_database`)
 - `--verbose` (`-v`) - If specified, the HNSW index will be loaded for more accurate fragmentation level reporting.
 
+##### Go
+
+> [!NOTE]
+> Coming soon
+
 #### Rebuild
+
+##### Python
 
 ```bash
 chops hnsw rebuild /path/to/persist_dir --collection <collection_name>
@@ -270,6 +278,11 @@ Additional options:
 - `--backup` (`-b`) - backup the old index. At the end of the rebuild process the location of the backed up index will be printed out. (default: `True`)
 - `--database` (`-d`) - the database name (default: `default_database`)
 - `--yes` (`-y`) - skip confirmation prompt
+
+##### Go
+
+> [!NOTE]
+> Coming soon
 
 ### Using Docker
 
