@@ -12,6 +12,8 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.table import Table
 from chroma_ops.utils import (
+    SqliteMode,
+    get_sqlite_connection,
     validate_chroma_persist_dir,
     get_dir_size,
     PersistentData,
@@ -228,103 +230,102 @@ def rebuild_hnsw(
     """Rebuilds the HNSW index in-place"""
     validate_chroma_persist_dir(persist_dir)
     console = Console()
-    sql_file = os.path.join(persist_dir, "chroma.sqlite3")
-    conn = sqlite3.connect(f"file:{sql_file}?mode=rw", uri=True)
-    # lock the database to ensure no new data is added while we are rebuilding the index
-    conn.execute("BEGIN EXCLUSIVE")
-    try:
-        hnsw_details = _get_hnsw_details(conn, persist_dir, collection_name, database)
-        if not hnsw_details["has_metadata"]:
-            console.print(
-                f"[red]Index metadata not found for segment {hnsw_details['segment_id']}. No need to rebuild.[/red]"
+    with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
+        # lock the database to ensure no new data is added while we are rebuilding the index
+        conn.execute("BEGIN EXCLUSIVE")
+        try:
+            hnsw_details = _get_hnsw_details(
+                conn, persist_dir, collection_name, database
             )
-            return
-        space = hnsw_details["space"]
-        ef_construction = hnsw_details["ef_construction"]
-        ef_search = hnsw_details["ef_search"]
-        m = hnsw_details["m"]
-        num_threads = hnsw_details["num_threads"]
-        batch_size = hnsw_details["batch_size"]
-        segment_id = hnsw_details["segment_id"]
-        dimensions = hnsw_details["dimensions"]
-        id_to_label = hnsw_details["id_to_label"]
-        with tempfile.TemporaryDirectory() as temp_dir:
-            # TODO get dir size to ensure we have enough space to copy the index files
-            temp_persist_dir = os.path.join(temp_dir, segment_id)
-            shutil.copytree(os.path.join(persist_dir, segment_id), temp_persist_dir)
-            target_index = hnswlib.Index(space=space, dim=dimensions)
-            target_index.init_index(
-                max_elements=len(id_to_label),
-                ef_construction=ef_construction,
-                M=m,
-                is_persistent_index=True,
-                persistence_location=temp_persist_dir,
-            )
-            target_index.set_num_threads(num_threads)
-            target_index.set_ef(ef_search)
-            source_index = hnswlib.Index(space=space, dim=dimensions)
-            source_index.load_index(
-                os.path.join(persist_dir, segment_id),
-                is_persistent_index=True,
-                max_elements=len(id_to_label),
-            )
-            source_index.set_num_threads(num_threads)
-            values = list(id_to_label.values())
-            print_hnsw_details(hnsw_details)
-            if not yes:
-                if not typer.confirm(
-                    "\nAre you sure you want to rebuild this index?",
-                    default=False,
-                    show_default=True,
-                ):
-                    console.print("[yellow]Rebuild cancelled by user[/yellow]")
-                    return
-            with Progress(
-                SpinnerColumn(
-                    finished_text="[bold green]:heavy_check_mark:[/bold green]"
-                ),
-                TextColumn("[progress.description]{task.description}"),
-                *[
-                    BarColumn(),
-                    TextColumn("{task.percentage:>3.0f}%"),
-                ],  # Add these columns
-                transient=True,
-            ) as progress:
-                task = progress.add_task(
-                    "Adding items to target index...", total=len(values)
-                )
-                for i in range(0, len(values), batch_size):
-                    items = source_index.get_items(ids=values[i : i + batch_size])
-                    target_index.add_items(items, values[i : i + batch_size])
-                    progress.update(task, advance=len(items))
-            target_index.persist_dirty()
-            target_index.close_file_handles()
-            source_index.close_file_handles()
-            if backup:
-                backup_target = os.path.join(
-                    persist_dir,
-                    f"{segment_id}_backup_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
-                )
-                shutil.move(os.path.join(persist_dir, segment_id), backup_target)
+            if not hnsw_details["has_metadata"]:
                 console.print(
-                    f"[bold green]Backup of old index created at {backup_target}[/bold green]"
+                    f"[red]Index metadata not found for segment {hnsw_details['segment_id']}. No need to rebuild.[/red]"
                 )
-            else:
-                shutil.rmtree(os.path.join(persist_dir, segment_id))
-            shutil.copytree(temp_persist_dir, os.path.join(persist_dir, segment_id))
-        conn.commit()
-        print_hnsw_details(
-            _get_hnsw_details(
-                conn, persist_dir, collection_name, database, verbose=True
+                return
+            space = hnsw_details["space"]
+            ef_construction = hnsw_details["ef_construction"]
+            ef_search = hnsw_details["ef_search"]
+            m = hnsw_details["m"]
+            num_threads = hnsw_details["num_threads"]
+            batch_size = hnsw_details["batch_size"]
+            segment_id = hnsw_details["segment_id"]
+            dimensions = hnsw_details["dimensions"]
+            id_to_label = hnsw_details["id_to_label"]
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # TODO get dir size to ensure we have enough space to copy the index files
+                temp_persist_dir = os.path.join(temp_dir, segment_id)
+                shutil.copytree(os.path.join(persist_dir, segment_id), temp_persist_dir)
+                target_index = hnswlib.Index(space=space, dim=dimensions)
+                target_index.init_index(
+                    max_elements=len(id_to_label),
+                    ef_construction=ef_construction,
+                    M=m,
+                    is_persistent_index=True,
+                    persistence_location=temp_persist_dir,
+                )
+                target_index.set_num_threads(num_threads)
+                target_index.set_ef(ef_search)
+                source_index = hnswlib.Index(space=space, dim=dimensions)
+                source_index.load_index(
+                    os.path.join(persist_dir, segment_id),
+                    is_persistent_index=True,
+                    max_elements=len(id_to_label),
+                )
+                source_index.set_num_threads(num_threads)
+                values = list(id_to_label.values())
+                print_hnsw_details(hnsw_details)
+                if not yes:
+                    if not typer.confirm(
+                        "\nAre you sure you want to rebuild this index?",
+                        default=False,
+                        show_default=True,
+                    ):
+                        console.print("[yellow]Rebuild cancelled by user[/yellow]")
+                        return
+                with Progress(
+                    SpinnerColumn(
+                        finished_text="[bold green]:heavy_check_mark:[/bold green]"
+                    ),
+                    TextColumn("[progress.description]{task.description}"),
+                    *[
+                        BarColumn(),
+                        TextColumn("{task.percentage:>3.0f}%"),
+                    ],  # Add these columns
+                    transient=True,
+                ) as progress:
+                    task = progress.add_task(
+                        "Adding items to target index...", total=len(values)
+                    )
+                    for i in range(0, len(values), batch_size):
+                        items = source_index.get_items(ids=values[i : i + batch_size])
+                        target_index.add_items(items, values[i : i + batch_size])
+                        progress.update(task, advance=len(items))
+                target_index.persist_dirty()
+                target_index.close_file_handles()
+                source_index.close_file_handles()
+                if backup:
+                    backup_target = os.path.join(
+                        persist_dir,
+                        f"{segment_id}_backup_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}",
+                    )
+                    shutil.move(os.path.join(persist_dir, segment_id), backup_target)
+                    console.print(
+                        f"[bold green]Backup of old index created at {backup_target}[/bold green]"
+                    )
+                else:
+                    shutil.rmtree(os.path.join(persist_dir, segment_id))
+                shutil.copytree(temp_persist_dir, os.path.join(persist_dir, segment_id))
+            conn.commit()
+            print_hnsw_details(
+                _get_hnsw_details(
+                    conn, persist_dir, collection_name, database, verbose=True
+                )
             )
-        )
-    except Exception:
-        conn.rollback()
-        console.print("[red]Failed to rebuild HNSW index[/red]")
-        traceback.print_exc()
-        raise
-    finally:
-        conn.close()
+        except Exception:
+            conn.rollback()
+            console.print("[red]Failed to rebuild HNSW index[/red]")
+            traceback.print_exc()
+            raise
 
 
 def info_hnsw(
@@ -335,20 +336,17 @@ def info_hnsw(
 ) -> HnswDetails:
     validate_chroma_persist_dir(persist_dir)
     console = Console()
-    sql_file = os.path.join(persist_dir, "chroma.sqlite3")
-    conn = sqlite3.connect(f"file:{sql_file}?mode=rw", uri=True)
-    try:
-        hnsw_details = _get_hnsw_details(
-            conn, persist_dir, collection_name, database, verbose=verbose
-        )
-        print_hnsw_details(hnsw_details)
-        return hnsw_details
-    except Exception:
-        console.print("[red]Failed to get HNSW details[/red]")
-        traceback.print_exc()
-        raise
-    finally:
-        conn.close()
+    with get_sqlite_connection(persist_dir, SqliteMode.READ_ONLY) as conn:
+        try:
+            hnsw_details = _get_hnsw_details(
+                conn, persist_dir, collection_name, database, verbose=verbose
+            )
+            print_hnsw_details(hnsw_details)
+            return hnsw_details
+        except Exception:
+            console.print("[red]Failed to get HNSW details[/red]")
+            traceback.print_exc()
+            raise
 
 
 def rebuild_hnsw_command(

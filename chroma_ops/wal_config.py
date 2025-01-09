@@ -23,85 +23,83 @@ def config_wal(
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
     console = Console()
-    conn = get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE)
-    cursor = conn.cursor()
-    try:
-        cursor.execute(
-            """SELECT name
-        FROM sqlite_master
-        WHERE type='table' AND name='embeddings_queue_config';"""
-        )
-        cursor.fetchone()
-    except sqlite3.OperationalError:
-        console.print(
-            "[red]WAL config table not found. Likely unsupported version of Chroma.[/red]"
-        )
-        return
-    try:
-        current_config = cursor.execute(
-            """SELECT config_json_str FROM embeddings_queue_config"""
-        ).fetchone()
-        current_config = json.loads(current_config[0])
-        del current_config["_type"]
-        table = Table(title="Current WAL config")
-        table.add_column("Config key", style="cyan")
-        table.add_column("Config Change", style="green")
-
-        if purge is not None:
-            if (
-                purge == PurgeFlag.OFF
-                and current_config["automatically_purge"] is False
-            ):
-                console.print(
-                    "[bold green]WAL config is already set to the desired state (auto purge disabled).[/bold green]"
-                )
-                return
-            elif (
-                purge == PurgeFlag.AUTO
-                and current_config["automatically_purge"] is True
-            ):
-                console.print(
-                    "[bold green]WAL config is already set to the desired state (auto purge enabled).[/bold green]"
-                )
-                return
-            table.add_row(
-                "Automatically purge (automatically_purge)",
-                f"{str(current_config['automatically_purge'])} (old) -> [red]{'True' if purge == PurgeFlag.AUTO else 'False'} (new)[/red]",
+    with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
+        cursor = conn.cursor()
+        try:
+            cursor.execute(
+                """SELECT name
+            FROM sqlite_master
+            WHERE type='table' AND name='embeddings_queue_config';"""
             )
-        else:
-            table.add_row(
-                "Automatically purge (automatically_purge)",
-                f"{str(current_config['automatically_purge'])}",
+            cursor.fetchone()
+        except sqlite3.OperationalError:
+            console.print(
+                "[red]WAL config table not found. Likely unsupported version of Chroma.[/red]"
             )
-        console.print(table)
+            return
+        try:
+            current_config = cursor.execute(
+                """SELECT config_json_str FROM embeddings_queue_config"""
+            ).fetchone()
+            current_config = json.loads(current_config[0])
+            del current_config["_type"]
+            table = Table(title="Current WAL config")
+            table.add_column("Config key", style="cyan")
+            table.add_column("Config Change", style="green")
 
-        if not yes:
-            if not typer.confirm(
-                "\nAre you sure you want to update the WAL config?",
-                default=False,
-                show_default=True,
-            ):
-                console.print("[yellow]Rebuild cancelled by user[/yellow]")
-                return
-        cursor.execute("BEGIN EXCLUSIVE")
-        if purge is not None:
-            if purge == PurgeFlag.OFF:
-                cursor.execute(
-                    """UPDATE embeddings_queue_config
-                SET config_json_str = JSON_SET(config_json_str, '$.automatically_purge', json('false'))"""
+            if purge is not None:
+                if (
+                    purge == PurgeFlag.OFF
+                    and current_config["automatically_purge"] is False
+                ):
+                    console.print(
+                        "[bold green]WAL config is already set to the desired state (auto purge disabled).[/bold green]"
+                    )
+                    return
+                elif (
+                    purge == PurgeFlag.AUTO
+                    and current_config["automatically_purge"] is True
+                ):
+                    console.print(
+                        "[bold green]WAL config is already set to the desired state (auto purge enabled).[/bold green]"
+                    )
+                    return
+                table.add_row(
+                    "Automatically purge (automatically_purge)",
+                    f"{str(current_config['automatically_purge'])} (old) -> [red]{'True' if purge == PurgeFlag.AUTO else 'False'} (new)[/red]",
                 )
-            elif purge == PurgeFlag.AUTO:
-                cursor.execute(
-                    """UPDATE embeddings_queue_config
-                SET config_json_str = JSON_SET(config_json_str, '$.automatically_purge', json('true'))"""
+            else:
+                table.add_row(
+                    "Automatically purge (automatically_purge)",
+                    f"{str(current_config['automatically_purge'])}",
                 )
-        conn.commit()
-        console.print("[bold green]WAL config updated successfully![/bold green]")
-    except sqlite3.OperationalError as e:
-        console.print(f"[red]Failed to update WAL config: {e}[/red]")
-        conn.rollback()
-    finally:
-        conn.close()
+            console.print(table)
+
+            if not yes:
+                if not typer.confirm(
+                    "\nAre you sure you want to update the WAL config?",
+                    default=False,
+                    show_default=True,
+                ):
+                    console.print("[yellow]Rebuild cancelled by user[/yellow]")
+                    return
+            cursor.execute("BEGIN EXCLUSIVE")
+            if purge is not None:
+                if purge == PurgeFlag.OFF:
+                    cursor.execute(
+                        """UPDATE embeddings_queue_config
+                    SET config_json_str = JSON_SET(config_json_str, '$.automatically_purge', json('false'))"""
+                    )
+                elif purge == PurgeFlag.AUTO:
+                    cursor.execute(
+                        """UPDATE embeddings_queue_config
+                    SET config_json_str = JSON_SET(config_json_str, '$.automatically_purge', json('true'))"""
+                    )
+            conn.commit()
+            console.print("[bold green]WAL config updated successfully![/bold green]")
+        except sqlite3.OperationalError as e:
+            console.print(f"[red]Failed to update WAL config: {e}[/red]")
+            conn.rollback()
 
 
 def command(

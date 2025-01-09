@@ -17,7 +17,7 @@ install:
 .PHONY: test
 test:
 	@echo "Running Pythontests"
-	@poetry run pytest
+	@poetry run pytest -x -n auto
 
 build-docker:
 	@echo "Building docker image"
