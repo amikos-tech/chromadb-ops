@@ -1,5 +1,7 @@
+from enum import Enum
 import os
 import pickle
+import sqlite3
 from typing import List, cast, Optional, Dict, Union
 
 import hnswlib
@@ -12,6 +14,20 @@ def validate_chroma_persist_dir(persist_dir: str) -> None:
         raise ValueError(
             f"{persist_dir} does not appear to be valid ChromaDB persist directory"
         )
+
+
+class SqliteMode(str, Enum):
+    READ_ONLY = "ro"
+    READ_WRITE = "rw"
+
+
+def get_sqlite_connection(
+    persist_dir: str, mode: SqliteMode = SqliteMode.READ_ONLY
+) -> sqlite3.Connection:
+    """Get a connection to the SQLite database. Assumes the database is in the persist directory."""
+    sql_file = os.path.join(persist_dir, "chroma.sqlite3")
+    conn = sqlite3.connect(f"file:{sql_file}?mode={mode.value}", uri=True)
+    return conn
 
 
 def get_hnsw_index_ids(filename: str, space: str = "l2", dim: int = 384) -> List[int]:
