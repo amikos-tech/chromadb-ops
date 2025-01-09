@@ -25,6 +25,7 @@ go install github.com/amikos-tech/chromadb-ops/cmd/chops
 ## Usage
 
 ### Info
+
 Gather general information about your persistent Chroma instance. This command is useful to understand what's going on
 internally in Chroma and to get recommendations or support from the team by providing the output.
 
