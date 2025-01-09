@@ -26,13 +26,15 @@ jobs:
           set -e
           python -m pip install --upgrade pip
           curl -sSL https://install.python-poetry.org | python3 -
-      #      - name: Lint with flake8
-      #        run: |
-      #          set -e
-      #          poetry update
-      #          pre-commit run --from-ref HEAD~1 --to-ref HEAD
-      - name: Run tests
+      - name: Install dependencies
         run: |
           set -e
           poetry update --with dev
-          poetry run pytest -n auto
+      - name: Lint
+        run: |
+          set -e
+          make lint
+      - name: Run tests
+        run: |
+          set -e
+          poetry run pytest -x -n auto
