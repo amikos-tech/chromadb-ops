@@ -10,6 +10,7 @@ from chroma_ops.utils import validate_chroma_persist_dir, read_script
 
 fts_commands = typer.Typer()
 
+
 def validate_tokenizer(tokenizer: str) -> None:
     valid_tokenizers = ["trigram", "unicode61", "ascii", "porter"]
     if (

@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
-import argparse
 import os
 import sqlite3
 import sys
 from typing import Optional, Sequence
-
 import typer
 from chromadb import __version__ as chroma_version
 from chroma_ops.utils import (
@@ -105,11 +103,3 @@ def command(
     ),
 ) -> None:
     clean_wal(persist_dir, skip_collection_names=skip_collection_names)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("persist_dir", type=str)
-    parser.add_argument("--skip-collection-names", type=str, default=None)
-    arg = parser.parse_args()
-    clean_wal(arg.persist_dir, skip_collection_names=arg.skip_collection_names)

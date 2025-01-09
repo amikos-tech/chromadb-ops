@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import argparse
 import os
 import sys
 from typing import Sequence, Optional
@@ -76,11 +75,3 @@ def command(
     ),
 ) -> None:
     commit_wal(persist_dir, skip_collection_names=skip_collection_names)
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("persist-dir", type=str)
-    parser.add_argument("--skip-collection-names", type=str, default=None)
-    arg = parser.parse_args()
-    commit_wal(arg.persist_dir, skip_collection_names=arg.skip_collection_names)

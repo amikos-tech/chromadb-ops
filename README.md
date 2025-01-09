@@ -168,42 +168,69 @@ This section presents general Chroma persistent dir info.
   to Chroma as they are not part of the metadata. This set should always be empty, if not please report it!!!
 - Fragmentation Level - the fragmentation level of the HNSW index.
 
-### WAL Commit
+### WAL Maintenance
+
+#### Commit
 
 This command ensures your WAL is committed to binary vector index (HNSW).
 
+**Python:**
+
 ```bash
-chops commit-wal /path/to/persist_dir
+chops wal commit /path/to/persist_dir
 ```
 
-> Note: You can skip certain collections by running `chops commit-wal /path/to/persist_dir --skip <collection_name>`
+> [!TIP]
+> You can skip certain collections by running `chops wal commit /path/to/persist_dir --skip <collection_name>`
 
-### WAL Cleanup
+**Go:**
+
+> [!NOTE]
+> Coming soon
+
+#### Cleanup
 
 This command cleans up the committed portion of the WAL and VACUUMs the database.
 
+**Python:**
+
 ```bash
-chops clean-wal /path/to/persist_dir
+chops wal clean /path/to/persist_dir
 ```
 
-### WAL Export
+**Go:**
+
+> [!NOTE]
+> Coming soon
+
+#### Export
 
 This commands exports the WAL to a `jsonl` file. The command can be useful in taking backups of the WAL.
 
+**Python:**
+
 ```bash
-chops export-wal /path/to/persist_dir --out /path/to/export.jsonl
+chops wal export /path/to/persist_dir --out /path/to/export.jsonl
 ```
 
-> Note: If --out or -o is not specified the command will print the output to stdout.
+> [!NOTE]
+> If --out or -o is not specified the command will print the output to stdout.
 
-### Full-Text Search (FTS) Index Rebuild
+**Go:**
+
+> [!NOTE]
+> Coming soon
+
+### Full-Text Search (FTS) Maintenance
+
+#### Rebuild
 
 This command rebuilds the full-text search index.
 
 > Note: **_Why is this needed_**? Users have reported broken FTS indices that result in a error of this
 > kind: `no such table: embedding_fulltext_search`
 
-#### Python
+**Python:**
 
 ```bash
 chops fts rebuild /path/to/persist_dir
@@ -215,9 +242,10 @@ Change the tokenizer to `unicode61` by passing `--tokenizer unicode61` (or `-t u
 chops fts rebuild --tokenizer unicode61 /path/to/persist_dir
 ```
 
+> [!TIP]
 > See [SQLite FTS5 Tokenizers](https://www.sqlite.org/fts5.html#tokenizers) for more information and available tokenizers and their options.
 
-#### Go
+**Go:**
 
 ```bash
 chops fts rebuild /path/to/persist_dir
@@ -239,7 +267,8 @@ This command cleans up orphaned vector segment directories.
 chops clean /path/to/persist_dir
 ```
 
-> Note: The command is particularly useful for windows users where deleting collections may leave behind orphaned vector
+> [!TIP]
+> The command is particularly useful for windows users where deleting collections may leave behind orphaned vector
 > segment directories due to Windows file locking.
 
 For the `go` version of the tool the command it is also possible to use `--dry-run` option to see what would be deleted
@@ -250,7 +279,7 @@ without actually deleting anything.
 
 #### Info
 
-##### Python
+**Python:**
 
 ```bash
 chops hnsw info /path/to/persist_dir --collection <collection_name>
@@ -261,14 +290,14 @@ Additional options:
 - `--database` (`-d`) - the database name (default: `default_database`)
 - `--verbose` (`-v`) - If specified, the HNSW index will be loaded for more accurate fragmentation level reporting.
 
-##### Go
+**Go:**
 
 > [!NOTE]
 > Coming soon
 
 #### Rebuild
 
-##### Python
+**Python:**
 
 ```bash
 chops hnsw rebuild /path/to/persist_dir --collection <collection_name>
@@ -280,7 +309,7 @@ Additional options:
 - `--database` (`-d`) - the database name (default: `default_database`)
 - `--yes` (`-y`) - skip confirmation prompt
 
-##### Go
+**Go:**
 
 > [!NOTE]
 > Coming soon
