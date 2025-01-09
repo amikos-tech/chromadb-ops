@@ -1,11 +1,14 @@
-import os
-import sqlite3
 import sys
 
 import chromadb
 import typer
 
-from chroma_ops.utils import validate_chroma_persist_dir, read_script
+from chroma_ops.utils import (
+    SqliteMode,
+    get_sqlite_connection,
+    validate_chroma_persist_dir,
+    read_script,
+)
 
 
 fts_commands = typer.Typer()
@@ -27,30 +30,28 @@ def validate_tokenizer(tokenizer: str) -> None:
 def rebuild_fts(persist_dir: str, tokenizer: str = "trigram") -> None:
     validate_chroma_persist_dir(persist_dir)
     validate_tokenizer(tokenizer)
-    sql_file = os.path.join(persist_dir, "chroma.sqlite3")
-    conn = sqlite3.connect(sql_file)
-    cursor = conn.cursor()
-    script = read_script("scripts/drop_fts.sql")
-    script = script.replace("__TOKENIZER__", tokenizer)
-    cursor.executescript(script)
-    cursor.close()
-    conn.close()
-    typer.echo("Dropped FTS. Will try to start your Chroma now.", file=sys.stderr)
-    typer.echo(
-        "NOTE: Depending on the size of your documents in Chroma it may take a while for Chroma to start up again.",
-        file=sys.stderr,
-        color=typer.colors.YELLOW,
-    )
-    try:
-        chromadb.PersistentClient(path=persist_dir)
-        typer.echo("Chroma started successfully.", file=sys.stderr)
-    except Exception as e:
+    with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
+        cursor = conn.cursor()
+        script = read_script("scripts/drop_fts.sql")
+        script = script.replace("__TOKENIZER__", tokenizer)
+        cursor.executescript(script)
+        cursor.close()
+        typer.echo("Dropped FTS. Will try to start your Chroma now.", file=sys.stderr)
         typer.echo(
-            f"Chroma failed to start. Error: {repr(e)}",
+            "NOTE: Depending on the size of your documents in Chroma it may take a while for Chroma to start up again.",
             file=sys.stderr,
-            color=typer.colors.RED,
-            err=True,
+            color=typer.colors.YELLOW,
         )
+        try:
+            chromadb.PersistentClient(path=persist_dir)
+            typer.echo("Chroma started successfully.", file=sys.stderr)
+        except Exception as e:
+            typer.echo(
+                f"Chroma failed to start. Error: {repr(e)}",
+                file=sys.stderr,
+                color=typer.colors.RED,
+                err=True,
+            )
 
 
 def rebuild_command(

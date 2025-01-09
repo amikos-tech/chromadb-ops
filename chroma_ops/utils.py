@@ -1,9 +1,13 @@
+from contextlib import contextmanager
 from enum import Enum
 import os
 import pickle
 import sqlite3
-from typing import List, cast, Optional, Dict, Union
+from typing import List, cast, Optional, Dict, Union, Generator, Any
 
+from chromadb import Collection
+import chromadb
+from chromadb import __version__ as chroma_version
 import hnswlib
 
 
@@ -21,13 +25,19 @@ class SqliteMode(str, Enum):
     READ_WRITE = "rw"
 
 
+@contextmanager
 def get_sqlite_connection(
     persist_dir: str, mode: SqliteMode = SqliteMode.READ_ONLY
-) -> sqlite3.Connection:
+) -> Generator[sqlite3.Connection, Any, None]:
     """Get a connection to the SQLite database. Assumes the database is in the persist directory."""
     sql_file = os.path.join(persist_dir, "chroma.sqlite3")
+    if not os.path.exists(sql_file):
+        raise ValueError(f"SQLite database file ({sql_file}) does not exist")
     conn = sqlite3.connect(f"file:{sql_file}?mode={mode.value}", uri=True)
-    return conn
+    try:
+        yield conn
+    finally:
+        conn.close()
 
 
 def get_hnsw_index_ids(filename: str, space: str = "l2", dim: int = 384) -> List[int]:
@@ -125,3 +135,13 @@ def sizeof_fmt(num: int, suffix: str = "B") -> str:
             return f"{n:3.1f}{unit}{suffix}"
         n /= 1024.0
     return f"{n:.1f}Yi{suffix}"
+
+
+def list_collections(client: chromadb.PersistentClient) -> List[Collection]:
+    if tuple(int(part) for part in chroma_version.split(".")) < (0, 6, 0):
+        return client.list_collections()  # type: ignore
+    else:
+        collections = []
+        for collection_name in client.list_collections():
+            collections.append(client.get_collection(collection_name))
+        return collections

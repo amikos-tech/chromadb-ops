@@ -10,7 +10,7 @@ from chromadb.segment.impl.vector.local_persistent_hnsw import PersistentData
 from chromadb.segment import VectorReader
 from chromadb.types import SegmentScope, Operation
 
-from chroma_ops.utils import validate_chroma_persist_dir
+from chroma_ops.utils import list_collections, validate_chroma_persist_dir
 
 
 def commit_wal(
@@ -23,7 +23,7 @@ def commit_wal(
     client = chromadb.PersistentClient(
         path=persist_dir
     )  # TODO we inadvetently migrate the targe DB to whatever version of Chroma is installed
-    all_collections = client.list_collections()
+    all_collections = list_collections(client)
     vector_segments = []
     for col in all_collections:
         if (
