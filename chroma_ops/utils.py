@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from enum import Enum
 import os
 import pickle
+import shutil
 import sqlite3
 from typing import List, cast, Optional, Dict, Union, Generator, Any
 
@@ -151,3 +152,22 @@ class DistanceMetric(str, Enum):
     COSINE = "cosine"
     L2 = "l2"
     IP = "ip"
+
+
+def get_disk_free_space(directory: str) -> int:
+    """Returns free space in bytes for the device containing the directory"""
+    return shutil.disk_usage(directory).free
+
+
+def check_disk_space(source_dir: str, target_dir: str) -> bool:
+    """
+    Checks if target directory's device has enough space for source files
+    Returns (has_space, message)
+    """
+    source_size = get_dir_size(source_dir)
+    free_space = get_disk_free_space(target_dir)
+    required_space = source_size * 1.1  # Require 10% extra space to be safe
+
+    if free_space < required_space:
+        return False
+    return True
