@@ -276,7 +276,6 @@ def _prepare_hnsw_segment_config_changes(
             "new": construction_ef,
         }
         final_changes["construction_ef"] = construction_ef
-    print(f"search_ef: {search_ef}", search_ef != hnsw_details["search_ef"])
     if search_ef and search_ef != hnsw_details["search_ef"]:
         changes_callbacks.append(
             lambda conn: conn.execute(
@@ -379,7 +378,7 @@ def rebuild_hnsw(
     batch_size: Optional[int] = None,
     sync_threshold: Optional[int] = None,
 ) -> None:
-    """Rebuilds the HNSW index in-place"""
+    """Rebuilds the HNSW index"""
     validate_chroma_persist_dir(persist_dir)
     console = Console()
     with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
@@ -389,11 +388,6 @@ def rebuild_hnsw(
             hnsw_details = _get_hnsw_details(
                 conn, persist_dir, collection_name, database
             )
-            if not hnsw_details["has_metadata"]:
-                console.print(
-                    f"[red]Index metadata not found for segment {hnsw_details['segment_id']}. No need to rebuild.[/red]"
-                )
-                return
             (
                 changes_callbacks,
                 changes_diff,
@@ -410,6 +404,11 @@ def rebuild_hnsw(
                 batch_size=batch_size,
                 sync_threshold=sync_threshold,
             )
+            if not hnsw_details["has_metadata"] and len(changes_diff) == 0:
+                console.print(
+                    f"[red]Index metadata not found for segment {hnsw_details['segment_id']} and no config changes to make. No need to rebuild.[/red]"
+                )
+                return
             _space = final_changes["space"]
             construction_ef = final_changes["construction_ef"]
             search_ef = final_changes["search_ef"]
@@ -441,7 +440,7 @@ def rebuild_hnsw(
                 )
                 source_index.set_num_threads(_num_threads)
                 values = list(id_to_label.values())
-                print_hnsw_details(hnsw_details)
+                print_hnsw_details(final_changes)
                 if len(changes_diff) > 0:
                     _print_hnsw_segment_config_changes(changes_diff)
                 if not yes:
