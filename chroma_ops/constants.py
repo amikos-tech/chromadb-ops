@@ -1,5 +1,7 @@
 import multiprocessing
 
+DEFAULT_TOPIC_NAMESPACE = "default"
+DEFAULT_TENANT_ID = "default"
 DEFAULT_DATABASE = "default_database"
 DEFAULT_TENANT = "default_tenant"
 DEFAULT_DISTANCE_METRIC = "l2"
