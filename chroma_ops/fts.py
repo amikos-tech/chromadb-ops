@@ -3,6 +3,7 @@ import sys
 import chromadb
 import typer
 
+from chroma_ops.constants import DEFAULT_TOKENIZER
 from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
@@ -27,7 +28,7 @@ def validate_tokenizer(tokenizer: str) -> None:
         )
 
 
-def rebuild_fts(persist_dir: str, tokenizer: str = "trigram") -> None:
+def rebuild_fts(persist_dir: str, tokenizer: str = DEFAULT_TOKENIZER) -> None:
     validate_chroma_persist_dir(persist_dir)
     validate_tokenizer(tokenizer)
     with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
@@ -57,7 +58,7 @@ def rebuild_fts(persist_dir: str, tokenizer: str = "trigram") -> None:
 def rebuild_command(
     persist_dir: str = typer.Argument(..., help="The persist directory"),
     tokenizer: str = typer.Option(
-        "trigram",
+        DEFAULT_TOKENIZER,
         "--tokenizer",
         "-t",
         help="The tokenizer to use for the FTS index. Supported values: 'trigram', 'unicode61', 'ascii', 'porter'. See https://www.sqlite.org/fts5.html#tokenizers",
