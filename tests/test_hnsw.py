@@ -17,7 +17,12 @@ from chroma_ops.constants import (
     DEFAULT_SEARCH_EF,
     DEFAULT_SYNC_THRESHOLD,
 )
-from chroma_ops.hnsw import info_hnsw, rebuild_hnsw, _get_hnsw_details
+from chroma_ops.hnsw import (
+    info_hnsw,
+    modify_runtime_config,
+    rebuild_hnsw,
+    _get_hnsw_details,
+)
 from hypothesis import given, settings
 import hypothesis.strategies as st
 
@@ -147,7 +152,7 @@ def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
     construction_ef=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
     search_ef=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
     num_threads=st.one_of(st.none(), st.integers(min_value=1, max_value=10)),
-    resize_factor=st.one_of(st.none(), st.floats(min_value=1.0, max_value=2.0)),
+    resize_factor=st.one_of(st.none(), st.floats(min_value=1.0, max_value=10.0)),
 )
 @settings(deadline=None, max_examples=10)
 def test_hnsw_rebuild_with_params(
@@ -178,7 +183,7 @@ def test_hnsw_rebuild_with_params(
             construction_ef=construction_ef,
             search_ef=search_ef,
             num_threads=num_threads,
-            resize_factor=resize_factor,
+            resize_factor=round(resize_factor, 2) if resize_factor else None,
             yes=True,
         )
         hnsw_details = info_hnsw(temp_dir, "test_collection")
@@ -191,6 +196,53 @@ def test_hnsw_rebuild_with_params(
         assert (
             hnsw_details["construction_ef"] == construction_ef
             or DEFAULT_CONSTRUCTION_EF
+        )
+        assert hnsw_details["search_ef"] == search_ef or DEFAULT_SEARCH_EF
+        assert hnsw_details["num_threads"] == num_threads or DEFAULT_NUM_THREADS
+        assert hnsw_details["resize_factor"] == round(
+            resize_factor or DEFAULT_RESIZE_FACTOR, 2
+        )
+
+
+@given(
+    records_to_add=st.integers(min_value=100, max_value=10000),
+    batch_size=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
+    sync_threshold=st.one_of(st.none(), st.integers(min_value=100, max_value=10000)),
+    search_ef=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
+    num_threads=st.one_of(st.none(), st.integers(min_value=1, max_value=10)),
+    resize_factor=st.one_of(st.none(), st.floats(min_value=1.0, max_value=10.0)),
+)
+@settings(deadline=None, max_examples=10)
+def test_hnsw_config(
+    records_to_add: int,
+    search_ef: Optional[int],
+    num_threads: Optional[int],
+    resize_factor: Optional[float],
+    batch_size: Optional[int],
+    sync_threshold: Optional[int],
+) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        client = chromadb.PersistentClient(path=temp_dir)
+        col = client.get_or_create_collection("test_collection")
+        ids = [str(uuid.uuid4()) for _ in range(records_to_add)]
+        documents = [f"document {i}" for i in range(records_to_add)]
+        embeddings = np.random.uniform(0, 1, (records_to_add, 384)).tolist()
+        col.add(ids=ids, documents=documents, embeddings=embeddings)
+        modify_runtime_config(
+            temp_dir,
+            "test_collection",
+            "default_database",
+            search_ef=search_ef,
+            num_threads=num_threads,
+            resize_factor=round(resize_factor, 2) if resize_factor else None,
+            batch_size=batch_size,
+            sync_threshold=sync_threshold,
+            yes=True,
+        )
+        hnsw_details = info_hnsw(temp_dir, "test_collection")
+        assert hnsw_details["batch_size"] == batch_size or DEFAULT_BATCH_SIZE
+        assert (
+            hnsw_details["sync_threshold"] == sync_threshold or DEFAULT_SYNC_THRESHOLD
         )
         assert hnsw_details["search_ef"] == search_ef or DEFAULT_SEARCH_EF
         assert hnsw_details["num_threads"] == num_threads or DEFAULT_NUM_THREADS

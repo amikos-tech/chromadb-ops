@@ -522,6 +522,66 @@ def info_hnsw(
             raise
 
 
+def modify_runtime_config(
+    persist_dir: str,
+    collection_name: str,
+    database: str,
+    search_ef: Optional[int] = None,
+    num_threads: Optional[int] = None,
+    resize_factor: Optional[float] = None,
+    batch_size: Optional[int] = None,
+    sync_threshold: Optional[int] = None,
+    yes: Optional[bool] = False,
+) -> None:
+    validate_chroma_persist_dir(persist_dir)
+    console = Console()
+    with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
+        conn.execute("BEGIN EXCLUSIVE")
+        try:
+            hnsw_details = _get_hnsw_details(
+                conn, persist_dir, collection_name, database
+            )
+            (
+                changes_callbacks,
+                changes_diff,
+                _,
+            ) = _prepare_hnsw_segment_config_changes(
+                hnsw_details["segment_id"],
+                hnsw_details,
+                search_ef=search_ef,
+                num_threads=num_threads,
+                resize_factor=resize_factor,
+                batch_size=batch_size,
+                sync_threshold=sync_threshold,
+            )
+            if len(changes_diff) > 0:
+                _print_hnsw_segment_config_changes(changes_diff)
+            else:
+                console.print(
+                    "[bold green]No changes to apply (it is possible requested changes are identical to current config)[/bold green]"
+                )
+                return
+            if not yes:
+                if not typer.confirm(
+                    "\nAre you sure you want to apply these changes?",
+                    default=False,
+                    show_default=True,
+                ):
+                    console.print("[yellow]Changes cancelled by user[/yellow]")
+                    return
+            for callback in changes_callbacks:
+                callback(conn)
+            conn.commit()
+            console.print(
+                "[bold green]HNSW index configuration modified successfully[/bold green]"
+            )
+        except Exception:
+            conn.rollback()
+            console.print("[red]Failed to modify HNSW index configuration[/red]")
+            traceback.print_exc()
+            raise
+
+
 def rebuild_hnsw_command(
     persist_dir: str = typer.Argument(..., help="The persist directory"),
     collection_name: str = typer.Option(
@@ -632,9 +692,71 @@ def info_hnsw_command(
     info_hnsw(persist_dir, collection_name, database, verbose)
 
 
+def hnsw_modify_runtime_config_command(
+    persist_dir: str = typer.Argument(..., help="The persist directory"),
+    *,
+    collection_name: str = typer.Option(
+        ..., "--collection", "-c", help="The collection name"
+    ),
+    database: str = typer.Option(
+        "default_database",
+        "--database",
+        "-d",
+        help="The database name",
+    ),
+    search_ef: Optional[int] = typer.Option(
+        None,
+        "--search-ef",
+        help="The search ef to use for the index",
+        min=1,
+    ),
+    num_threads: Optional[int] = typer.Option(
+        None,
+        "--num-threads",
+        help="The number of threads to use for the index",
+        min=1,
+    ),
+    resize_factor: Optional[float] = typer.Option(
+        None,
+        "--resize-factor",
+        help="The resize factor to use for the index",
+        min=1.0,
+    ),
+    batch_size: Optional[int] = typer.Option(
+        None,
+        "--batch-size",
+        help="The batch size to use for the index",
+        min=2,
+    ),
+    sync_threshold: Optional[int] = typer.Option(
+        None,
+        "--sync-threshold",
+        help="The sync threshold to use for the index",
+        min=2,
+    ),
+    yes: bool = typer.Option(
+        False,
+        "--yes",
+        "-y",
+        help="Skip confirmation prompt",
+    ),
+) -> None:
+    modify_runtime_config(
+        persist_dir,
+        collection_name,
+        database,
+        search_ef=search_ef,
+        num_threads=num_threads,
+        resize_factor=resize_factor,
+        batch_size=batch_size,
+        sync_threshold=sync_threshold,
+        yes=yes,
+    )
+
+
 hnsw_commands.command(
     name="rebuild",
-    help="Rebuild the HNSW index",
+    help="Rebuild the HNSW index and update HNSW index configuration",
     no_args_is_help=True,
 )(rebuild_hnsw_command)
 
@@ -643,3 +765,9 @@ hnsw_commands.command(
     help="Info about the HNSW index",
     no_args_is_help=True,
 )(info_hnsw_command)
+
+hnsw_commands.command(
+    name="config",
+    help="Modify the HNSW index configuration. This is a soft change that updates index configuration without rebuilding the index. The config changes are related to ",
+    no_args_is_help=True,
+)(hnsw_modify_runtime_config_command)
