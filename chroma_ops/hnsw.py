@@ -14,6 +14,7 @@ from rich.table import Table
 from chroma_ops.utils import (
     DistanceMetric,
     SqliteMode,
+    check_disk_space,
     get_sqlite_connection,
     validate_chroma_persist_dir,
     get_dir_size,
@@ -52,7 +53,7 @@ class HnswDetails(TypedDict):
     num_elements: int
     id_to_label: Dict[str, int]
     collection_id: str
-    index_size: str
+    index_size: int
     fragmentation_level: float
     fragmentation_level_estimated: bool
 
@@ -191,9 +192,7 @@ def _get_hnsw_details(
         num_elements=len(id_to_label),
         id_to_label=id_to_label,
         collection_id=collection_details[0],
-        index_size=sizeof_fmt(
-            get_dir_size(os.path.join(persist_dir, segment_id[0])),
-        ),
+        index_size=get_dir_size(os.path.join(persist_dir, segment_id[0])),
         fragmentation_level=fragmentation_level,
         fragmentation_level_estimated=fragmentation_level_estimated,
     )
@@ -223,7 +222,7 @@ def print_hnsw_details(hnsw_details: HnswDetails) -> None:
     table.add_row("Has metadata", str(hnsw_details["has_metadata"]))
     table.add_row("Number of elements", str(hnsw_details["num_elements"]))
     table.add_row("Collection ID", str(hnsw_details["collection_id"]))
-    table.add_row("Index size", hnsw_details["index_size"])
+    table.add_row("Index size", sizeof_fmt(hnsw_details["index_size"]))
     table.add_row(
         "Fragmentation level",
         f"{hnsw_details['fragmentation_level']:.2f}% {'(estimated)' if hnsw_details['fragmentation_level_estimated'] else ''}",
@@ -419,8 +418,14 @@ def rebuild_hnsw(
             dimensions = final_changes["dimensions"]
             id_to_label = final_changes["id_to_label"]
             with tempfile.TemporaryDirectory() as temp_dir:
-                # TODO get dir size to ensure we have enough space to copy the index files
                 temp_persist_dir = os.path.join(temp_dir, segment_id)
+                if not check_disk_space(
+                    os.path.join(persist_dir, segment_id), temp_dir
+                ):
+                    console.print(
+                        f"[red]Not enough space on in temp dir {temp_persist_dir} to copy index from {os.path.join(persist_dir, segment_id)}[/red]"
+                    )
+                    return
                 shutil.copytree(os.path.join(persist_dir, segment_id), temp_persist_dir)
                 target_index = hnswlib.Index(space=_space, dim=dimensions)
                 target_index.init_index(
