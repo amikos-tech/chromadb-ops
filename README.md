@@ -319,6 +319,15 @@ Additional options:
 
 #### Rebuild
 
+Allows you to rebuild the HNSW index. The command also allows you to modify the HNSW index configuration, including parameters which are cannot be changed after index initialization.
+
+Use cases:
+
+- Defragment the index
+- Change the distance metric
+- Change configuration parameters like `M` or `construction_ef` parameters normally not changeable after index initialization
+- Tune the HNSW index for better performance
+
 **Python:**
 
 ```bash
@@ -334,6 +343,36 @@ Additional options:
 - `--construction-ef` (`-c`) - the construction ef to use for the index.
 - `--search-ef` (`-e`) - the search ef to use for the index.
 - `--m` (`-m`) - the m to use for the index.
+- `--num-threads` (`-t`) - the number of threads to use for the index.
+- `--resize-factor` (`-r`) - the resize factor to use for the index.
+- `--batch-size` (`-b`) - the batch size to use for the index.
+- `--sync-threshold` (`-s`) - the sync threshold to use for the index.
+
+> [!NOTE]
+> All the HNSW index options default to `None` which means no changes will be made if the parameter is not specified. Additionally, any options provided that are identical to the current index configuration will be skipped.
+
+**Go:**
+
+> [!NOTE]
+> Coming soon
+
+#### Config
+
+Allows you to modify the HNSW index configuration at runtime. This command only modifies configuration parameters that can be changed at runtime.
+
+Use cases:
+
+- Tune the HNSW index for better performance
+
+**Python:**
+
+```bash
+chops hnsw config /path/to/persist_dir --collection <collection_name>
+```
+
+Options:
+
+- `--search-ef` (`-e`) - the search ef to use for the index.
 - `--num-threads` (`-t`) - the number of threads to use for the index.
 - `--resize-factor` (`-r`) - the resize factor to use for the index.
 - `--batch-size` (`-b`) - the batch size to use for the index.
