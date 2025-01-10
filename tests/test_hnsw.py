@@ -199,8 +199,10 @@ def test_hnsw_rebuild_with_params(
         )
         assert hnsw_details["search_ef"] == search_ef or DEFAULT_SEARCH_EF
         assert hnsw_details["num_threads"] == num_threads or DEFAULT_NUM_THREADS
-        assert hnsw_details["resize_factor"] == round(
-            resize_factor or DEFAULT_RESIZE_FACTOR, 2
+        assert (
+            hnsw_details["resize_factor"] == round(resize_factor, 2)
+            if resize_factor
+            else DEFAULT_RESIZE_FACTOR
         )
 
 
@@ -246,6 +248,8 @@ def test_hnsw_config(
         )
         assert hnsw_details["search_ef"] == search_ef or DEFAULT_SEARCH_EF
         assert hnsw_details["num_threads"] == num_threads or DEFAULT_NUM_THREADS
-        assert hnsw_details["resize_factor"] == round(
-            resize_factor or DEFAULT_RESIZE_FACTOR, 2
+        assert (
+            hnsw_details["resize_factor"] == round(resize_factor, 2)
+            if resize_factor
+            else DEFAULT_RESIZE_FACTOR
         )
