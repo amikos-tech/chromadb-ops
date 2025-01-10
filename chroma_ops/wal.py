@@ -3,6 +3,7 @@ from chroma_ops.wal_export import command as export_command
 from chroma_ops.wal_commit import command as commit_command
 from chroma_ops.wal_clean import command as clean_command
 from chroma_ops.wal_config import command as config_command
+from chroma_ops.wal_info import command as info_command
 
 wal_commands = typer.Typer(no_args_is_help=True)
 
@@ -18,3 +19,6 @@ wal_commands.command(
 wal_commands.command(
     name="config", no_args_is_help=True, help="Configure WAL purge behavior."
 )(config_command)
+wal_commands.command(
+    name="info", no_args_is_help=True, help="Get information about Chroma WAL."
+)(info_command)

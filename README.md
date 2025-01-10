@@ -170,6 +170,21 @@ This section presents general Chroma persistent dir info.
 
 ### WAL Maintenance
 
+#### Info
+
+This command shows the number of records in the WAL for each collection.
+
+**Python:**
+
+```bash
+chops wal info /path/to/persist_dir
+```
+
+**Go:**
+
+> [!NOTE]
+> Coming soon
+
 #### Commit
 
 This command ensures your WAL is committed to binary vector index (HNSW).

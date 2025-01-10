@@ -13,13 +13,14 @@ from chroma_ops.utils import (
     PersistentData,
     decode_seq_id,
 )
+from chroma_ops.constants import DEFAULT_TENANT_ID, DEFAULT_TOPIC_NAMESPACE
 
 
 def clean_wal(
     persist_dir: str,
     skip_collection_names: Optional[Sequence[str]] = None,
-    database: Optional[str] = "default",
-    namespace: Optional[str] = "default",
+    tenant: Optional[str] = DEFAULT_TENANT_ID,
+    topic_namespace: Optional[str] = DEFAULT_TOPIC_NAMESPACE,
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
     typer.echo(f"Size before: {get_dir_size(persist_dir)}", file=sys.stderr)
@@ -49,7 +50,7 @@ def clean_wal(
             else:
                 segment_id = row[0]
                 collection_id = row[1]
-                topic = f"persistent://{database}/{namespace}/{collection_id}"
+                topic = f"persistent://{tenant}/{topic_namespace}/{collection_id}"
             metadata_pickle = os.path.join(
                 persist_dir, segment_id, "index_metadata.pickle"
             )
