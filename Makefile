@@ -1,10 +1,10 @@
 lint:
 	@echo "Running pre-commit hooks"
-	@pre-commit run --all-files
+	@poetry run pre-commit run --all-files
 
 pre-commit:
 	@echo "Linting last commit"
-	@pre-commit run --from-ref HEAD~1 --to-ref HEAD
+	@poetry run pre-commit run --from-ref HEAD~1 --to-ref HEAD
 
 dependencies:
 	@echo "Installing dependencies"

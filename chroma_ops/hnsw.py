@@ -5,13 +5,14 @@ import shutil
 import sqlite3
 import tempfile
 import traceback
-from typing import Dict, Optional, TypedDict
+from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict
 import hnswlib
 import typer
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.table import Table
 from chroma_ops.utils import (
+    DistanceMetric,
     SqliteMode,
     get_sqlite_connection,
     validate_chroma_persist_dir,
@@ -19,8 +20,18 @@ from chroma_ops.utils import (
     PersistentData,
     sizeof_fmt,
 )
+from chroma_ops.constants import (
+    DEFAULT_BATCH_SIZE,
+    DEFAULT_CONSTRUCTION_EF,
+    DEFAULT_DISTANCE_METRIC,
+    DEFAULT_M,
+    DEFAULT_NUM_THREADS,
+    DEFAULT_RESIZE_FACTOR,
+    DEFAULT_SEARCH_EF,
+    DEFAULT_SYNC_THRESHOLD,
+)
 
-hnsw_commands = typer.Typer()
+hnsw_commands = typer.Typer(no_args_is_help=True)
 
 
 class HnswDetails(TypedDict):
@@ -28,11 +39,11 @@ class HnswDetails(TypedDict):
     database: str
     space: str
     dimensions: int
-    ef_construction: int
-    ef_search: int
+    construction_ef: int
+    search_ef: int
     m: int
     num_threads: int
-    resize_factor: int
+    resize_factor: float
     batch_size: int
     sync_threshold: int
     segment_id: str
@@ -85,38 +96,38 @@ def _get_hnsw_details(
     space = (
         config["hnsw:space"]
         if "hnsw:space" in config and config["hnsw:space"]
-        else "l2"
+        else DEFAULT_DISTANCE_METRIC
     )
-    ef_construction = (
+    construction_ef = (
         config["hnsw:construction_ef"]
         if "hnsw:construction_ef" in config and config["hnsw:construction_ef"]
-        else 100
+        else DEFAULT_CONSTRUCTION_EF
     )
-    ef_search = (
+    search_ef = (
         config["hnsw:search_ef"]
         if "hnsw:search_ef" in config and config["hnsw:search_ef"]
-        else 100
+        else DEFAULT_SEARCH_EF
     )
-    m = config["hnsw:M"] if "hnsw:M" in config and config["hnsw:M"] else 16
+    m = config["hnsw:M"] if "hnsw:M" in config and config["hnsw:M"] else DEFAULT_M
     num_threads = (
         config["hnsw:num_threads"]
         if "hnsw:num_threads" in config and config["hnsw:num_threads"]
-        else 1
+        else DEFAULT_NUM_THREADS
     )
     resize_factor = (
         config["hnsw:resize_factor"]
         if "hnsw:resize_factor" in config and config["hnsw:resize_factor"]
-        else 1.2
+        else DEFAULT_RESIZE_FACTOR
     )
     batch_size = (
         config["hnsw:batch_size"]
         if "hnsw:batch_size" in config and config["hnsw:batch_size"]
-        else 100
+        else DEFAULT_BATCH_SIZE
     )
     sync_threshold = (
         config["hnsw:sync_threshold"]
         if "hnsw:sync_threshold" in config and config["hnsw:sync_threshold"]
-        else 1000
+        else DEFAULT_SYNC_THRESHOLD
     )
     dimensions = collection_details[1]
     id_to_label = {}
@@ -148,7 +159,7 @@ def _get_hnsw_details(
                 max_elements=len(id_to_label),
             )
             index.set_num_threads(num_threads)
-            index.set_ef(ef_search)
+            index.set_ef(search_ef)
             total_elements = index.element_count
             if total_elements > 0:
                 fragmentation_level = (
@@ -167,8 +178,8 @@ def _get_hnsw_details(
         database=database if database else "default_database",
         space=space,
         dimensions=dimensions,
-        ef_construction=ef_construction,
-        ef_search=ef_search,
+        construction_ef=construction_ef,
+        search_ef=search_ef,
         m=m,
         num_threads=num_threads,
         resize_factor=resize_factor,
@@ -200,8 +211,8 @@ def print_hnsw_details(hnsw_details: HnswDetails) -> None:
     # Add rows for each detail
     table.add_row("Space", str(hnsw_details["space"]))
     table.add_row("Dimensions", str(hnsw_details["dimensions"]))
-    table.add_row("EF Construction", str(hnsw_details["ef_construction"]))
-    table.add_row("EF Search", str(hnsw_details["ef_search"]))
+    table.add_row("EF Construction", str(hnsw_details["construction_ef"]))
+    table.add_row("EF Search", str(hnsw_details["search_ef"]))
     table.add_row("M", str(hnsw_details["m"]))
     table.add_row("Number of threads", str(hnsw_details["num_threads"]))
     table.add_row("Resize factor", str(hnsw_details["resize_factor"]))
@@ -220,12 +231,153 @@ def print_hnsw_details(hnsw_details: HnswDetails) -> None:
     console.print(table)
 
 
+def _prepare_hnsw_segment_config_changes(
+    segment_id: str,
+    hnsw_details: HnswDetails,
+    *,
+    space: Optional[str] = None,
+    construction_ef: Optional[int] = None,
+    search_ef: Optional[int] = None,
+    m: Optional[int] = None,
+    num_threads: Optional[int] = None,
+    resize_factor: Optional[float] = None,
+    batch_size: Optional[int] = None,
+    sync_threshold: Optional[int] = None,
+) -> Tuple[
+    List[Callable[[sqlite3.Connection], None]],
+    Dict[str, Dict[str, Any]],
+    HnswDetails,
+]:
+    """Prepare the HNSW segment config changes in `segment_metadata`"""
+    changes_callbacks = []
+    changes_diff: Dict[str, Dict[str, Any]] = {}
+    final_changes: HnswDetails = hnsw_details.copy()
+    if space and space != hnsw_details["space"]:
+        changes_callbacks.append(
+            lambda conn: conn.execute(
+                "INSERT INTO segment_metadata (segment_id, key, str_value) VALUES (?, 'hnsw:space', ?) ON CONFLICT (segment_id, key) DO UPDATE SET str_value = ?",
+                (segment_id, space, space),
+            )
+        )
+        changes_diff["hnsw:space"] = {
+            "old": hnsw_details["space"],
+            "new": space,
+        }
+        final_changes["space"] = space
+    if construction_ef and construction_ef != hnsw_details["construction_ef"]:
+        changes_callbacks.append(
+            lambda conn: conn.execute(
+                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:construction_ef', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                (segment_id, construction_ef, construction_ef),
+            )
+        )
+        changes_diff["hnsw:construction_ef"] = {
+            "old": hnsw_details["construction_ef"],
+            "new": construction_ef,
+        }
+        final_changes["construction_ef"] = construction_ef
+    print(f"search_ef: {search_ef}", search_ef != hnsw_details["search_ef"])
+    if search_ef and search_ef != hnsw_details["search_ef"]:
+        changes_callbacks.append(
+            lambda conn: conn.execute(
+                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:search_ef', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                (segment_id, search_ef, search_ef),
+            )
+        )
+        changes_diff["hnsw:search_ef"] = {
+            "old": hnsw_details["search_ef"],
+            "new": search_ef,
+        }
+        final_changes["search_ef"] = search_ef
+    if m and m != hnsw_details["m"]:
+        changes_callbacks.append(
+            lambda conn: conn.execute(
+                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:M', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                (segment_id, m, m),
+            )
+        )
+        changes_diff["hnsw:M"] = {
+            "old": hnsw_details["m"],
+            "new": m,
+        }
+        final_changes["m"] = m
+    if num_threads and num_threads != hnsw_details["num_threads"]:
+        changes_callbacks.append(
+            lambda conn: conn.execute(
+                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:num_threads', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                (segment_id, num_threads, num_threads),
+            )
+        )
+        changes_diff["hnsw:num_threads"] = {
+            "old": hnsw_details["num_threads"],
+            "new": num_threads,
+        }
+        final_changes["num_threads"] = num_threads
+    if resize_factor and resize_factor != hnsw_details["resize_factor"]:
+        changes_callbacks.append(
+            lambda conn: conn.execute(
+                "INSERT INTO segment_metadata (segment_id, key, float_value) VALUES (?, 'hnsw:resize_factor', ?) ON CONFLICT (segment_id, key) DO UPDATE SET float_value = ?",
+                (segment_id, resize_factor, resize_factor),
+            )
+        )
+        changes_diff["hnsw:resize_factor"] = {
+            "old": hnsw_details["resize_factor"],
+            "new": resize_factor,
+        }
+        final_changes["resize_factor"] = resize_factor
+    if batch_size and batch_size != hnsw_details["batch_size"]:
+        changes_callbacks.append(
+            lambda conn: conn.execute(
+                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:batch_size', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                (segment_id, batch_size, batch_size),
+            )
+        )
+        changes_diff["hnsw:batch_size"] = {
+            "old": hnsw_details["batch_size"],
+            "new": batch_size,
+        }
+        final_changes["batch_size"] = batch_size
+    if sync_threshold and sync_threshold != hnsw_details["sync_threshold"]:
+        changes_callbacks.append(
+            lambda conn: conn.execute(
+                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:sync_threshold', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                (segment_id, sync_threshold, sync_threshold),
+            )
+        )
+        changes_diff["hnsw:sync_threshold"] = {
+            "old": hnsw_details["sync_threshold"],
+            "new": sync_threshold,
+        }
+        final_changes["sync_threshold"] = sync_threshold
+    return changes_callbacks, changes_diff, final_changes
+
+
+def _print_hnsw_segment_config_changes(changes_diff: Dict[str, Dict[str, Any]]) -> None:
+    console = Console()
+    table = Table(title="HNSW segment config changes")
+    table.add_column("Config Key", style="cyan")
+    table.add_column("Old", style="green")
+    table.add_column("New", style="red")
+    for key, value in changes_diff.items():
+        table.add_row(key, str(value["old"]), str(value["new"]))
+    console.print(table)
+
+
 def rebuild_hnsw(
     persist_dir: str,
+    *,
     collection_name: str,
     database: Optional[str] = "default_database",
     backup: Optional[bool] = True,
     yes: Optional[bool] = False,
+    space: Optional[str] = None,
+    construction_ef: Optional[int] = None,
+    search_ef: Optional[int] = None,
+    m: Optional[int] = None,
+    num_threads: Optional[int] = None,
+    resize_factor: Optional[float] = None,
+    batch_size: Optional[int] = None,
+    sync_threshold: Optional[int] = None,
 ) -> None:
     """Rebuilds the HNSW index in-place"""
     validate_chroma_persist_dir(persist_dir)
@@ -242,38 +394,56 @@ def rebuild_hnsw(
                     f"[red]Index metadata not found for segment {hnsw_details['segment_id']}. No need to rebuild.[/red]"
                 )
                 return
-            space = hnsw_details["space"]
-            ef_construction = hnsw_details["ef_construction"]
-            ef_search = hnsw_details["ef_search"]
-            m = hnsw_details["m"]
-            num_threads = hnsw_details["num_threads"]
-            batch_size = hnsw_details["batch_size"]
-            segment_id = hnsw_details["segment_id"]
-            dimensions = hnsw_details["dimensions"]
-            id_to_label = hnsw_details["id_to_label"]
+            (
+                changes_callbacks,
+                changes_diff,
+                final_changes,
+            ) = _prepare_hnsw_segment_config_changes(
+                hnsw_details["segment_id"],
+                hnsw_details,
+                space=space,
+                construction_ef=construction_ef,
+                search_ef=search_ef,
+                m=m,
+                num_threads=num_threads,
+                resize_factor=resize_factor,
+                batch_size=batch_size,
+                sync_threshold=sync_threshold,
+            )
+            _space = final_changes["space"]
+            construction_ef = final_changes["construction_ef"]
+            search_ef = final_changes["search_ef"]
+            _m = final_changes["m"]
+            _num_threads = final_changes["num_threads"]
+            _batch_size = final_changes["batch_size"]
+            segment_id = final_changes["segment_id"]
+            dimensions = final_changes["dimensions"]
+            id_to_label = final_changes["id_to_label"]
             with tempfile.TemporaryDirectory() as temp_dir:
                 # TODO get dir size to ensure we have enough space to copy the index files
                 temp_persist_dir = os.path.join(temp_dir, segment_id)
                 shutil.copytree(os.path.join(persist_dir, segment_id), temp_persist_dir)
-                target_index = hnswlib.Index(space=space, dim=dimensions)
+                target_index = hnswlib.Index(space=_space, dim=dimensions)
                 target_index.init_index(
                     max_elements=len(id_to_label),
-                    ef_construction=ef_construction,
-                    M=m,
+                    ef_construction=construction_ef,
+                    M=_m,
                     is_persistent_index=True,
                     persistence_location=temp_persist_dir,
                 )
-                target_index.set_num_threads(num_threads)
-                target_index.set_ef(ef_search)
-                source_index = hnswlib.Index(space=space, dim=dimensions)
+                target_index.set_num_threads(_num_threads)
+                target_index.set_ef(search_ef)
+                source_index = hnswlib.Index(space=_space, dim=dimensions)
                 source_index.load_index(
                     os.path.join(persist_dir, segment_id),
                     is_persistent_index=True,
                     max_elements=len(id_to_label),
                 )
-                source_index.set_num_threads(num_threads)
+                source_index.set_num_threads(_num_threads)
                 values = list(id_to_label.values())
                 print_hnsw_details(hnsw_details)
+                if len(changes_diff) > 0:
+                    _print_hnsw_segment_config_changes(changes_diff)
                 if not yes:
                     if not typer.confirm(
                         "\nAre you sure you want to rebuild this index?",
@@ -282,6 +452,9 @@ def rebuild_hnsw(
                     ):
                         console.print("[yellow]Rebuild cancelled by user[/yellow]")
                         return
+                if len(changes_diff) > 0:
+                    for callback in changes_callbacks:
+                        callback(conn)
                 with Progress(
                     SpinnerColumn(
                         finished_text="[bold green]:heavy_check_mark:[/bold green]"
@@ -296,9 +469,9 @@ def rebuild_hnsw(
                     task = progress.add_task(
                         "Adding items to target index...", total=len(values)
                     )
-                    for i in range(0, len(values), batch_size):
-                        items = source_index.get_items(ids=values[i : i + batch_size])
-                        target_index.add_items(items, values[i : i + batch_size])
+                    for i in range(0, len(values), _batch_size):
+                        items = source_index.get_items(ids=values[i : i + _batch_size])
+                        target_index.add_items(items, values[i : i + _batch_size])
                         progress.update(task, advance=len(items))
                 target_index.persist_dirty()
                 target_index.close_file_handles()
@@ -372,13 +545,69 @@ def rebuild_hnsw_command(
         "-y",
         help="Skip confirmation prompt",
     ),
+    space: Optional[DistanceMetric] = typer.Option(
+        None,
+        "--space",
+        help="The space to use for the index",
+        case_sensitive=False,
+    ),
+    construction_ef: Optional[int] = typer.Option(
+        None,
+        "--construction-ef",
+        help="The construction ef to use for the index",
+        min=1,
+    ),
+    search_ef: Optional[int] = typer.Option(
+        None,
+        "--search-ef",
+        help="The search ef to use for the index",
+        min=1,
+    ),
+    m: Optional[int] = typer.Option(
+        None,
+        "--m",
+        help="The m to use for the index",
+        min=1,
+    ),
+    num_threads: Optional[int] = typer.Option(
+        None,
+        "--num-threads",
+        help="The number of threads to use for the index",
+        min=1,
+    ),
+    resize_factor: Optional[float] = typer.Option(
+        None,
+        "--resize-factor",
+        help="The resize factor to use for the index",
+        min=1.0,
+    ),
+    batch_size: Optional[int] = typer.Option(
+        None,
+        "--batch-size",
+        help="The batch size to use for the index",
+        min=2,
+    ),
+    sync_threshold: Optional[int] = typer.Option(
+        None,
+        "--sync-threshold",
+        help="The sync threshold to use for the index",
+        min=2,
+    ),
 ) -> None:
     rebuild_hnsw(
         persist_dir,
-        collection_name,
-        database,
-        backup,
-        yes,
+        collection_name=collection_name,
+        database=database,
+        backup=backup,
+        yes=yes,
+        space=space.lower() if space else None,
+        construction_ef=construction_ef,
+        search_ef=search_ef,
+        m=m,
+        num_threads=num_threads,
+        resize_factor=resize_factor,
+        batch_size=batch_size,
+        sync_threshold=sync_threshold,
     )
 
 

@@ -145,3 +145,9 @@ def list_collections(client: chromadb.PersistentClient) -> List[Collection]:
         for collection_name in client.list_collections():
             collections.append(client.get_collection(collection_name))
         return collections
+
+
+class DistanceMetric(str, Enum):
+    COSINE = "cosine"
+    L2 = "l2"
+    IP = "ip"

@@ -2,13 +2,26 @@ import os
 import shutil
 import sqlite3
 import tempfile
+from typing import Optional
 import uuid
 
 import chromadb
 import numpy as np
+from chroma_ops.constants import (
+    DEFAULT_BATCH_SIZE,
+    DEFAULT_CONSTRUCTION_EF,
+    DEFAULT_DISTANCE_METRIC,
+    DEFAULT_M,
+    DEFAULT_NUM_THREADS,
+    DEFAULT_RESIZE_FACTOR,
+    DEFAULT_SEARCH_EF,
+    DEFAULT_SYNC_THRESHOLD,
+)
 from chroma_ops.hnsw import info_hnsw, rebuild_hnsw, _get_hnsw_details
 from hypothesis import given, settings
 import hypothesis.strategies as st
+
+from chroma_ops.utils import DistanceMetric
 
 
 @given(verbose=st.booleans())
@@ -38,8 +51,8 @@ def test_hnsw_info(verbose: bool) -> None:
             info_dict["num_elements"] == 0
         )  # with too few elements, metadata is not created
         assert info_dict["dimensions"] == 384
-        assert info_dict["ef_construction"] == 101
-        assert info_dict["ef_search"] == 101
+        assert info_dict["construction_ef"] == 101
+        assert info_dict["search_ef"] == 101
         assert info_dict["m"] == 17
         assert info_dict["batch_size"] == 101
         assert info_dict["sync_threshold"] == 1001
@@ -94,7 +107,11 @@ def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
                 assert details["fragmentation_level"] == 0.0
         else:
             assert details["fragmentation_level"] == 0.0
-        rebuild_hnsw(temp_dir, "test_collection", yes=True)
+        rebuild_hnsw(
+            temp_dir,
+            collection_name="test_collection",
+            yes=True,
+        )
         if should_have_fragmentation:
             conn = sqlite3.connect(sql_file)
             details = _get_hnsw_details(conn, temp_dir, "test_collection", verbose=True)
@@ -112,3 +129,71 @@ def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
         col.add(ids=new_ids, documents=new_documents, embeddings=new_embeddings)
         new_random_ids_to_delete = np.random.choice(new_ids, size=10, replace=False)
         col.delete(ids=new_random_ids_to_delete.tolist())
+
+
+@given(
+    records_to_add=st.integers(min_value=100, max_value=10000),
+    space=st.sampled_from(
+        [
+            None,
+            DistanceMetric.COSINE.value,
+            DistanceMetric.IP.value,
+            DistanceMetric.L2.value,
+        ]
+    ),
+    batch_size=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
+    sync_threshold=st.one_of(st.none(), st.integers(min_value=100, max_value=10000)),
+    m=st.one_of(st.none(), st.integers(min_value=10, max_value=100)),
+    construction_ef=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
+    search_ef=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
+    num_threads=st.one_of(st.none(), st.integers(min_value=1, max_value=10)),
+    resize_factor=st.one_of(st.none(), st.floats(min_value=1.0, max_value=2.0)),
+)
+@settings(deadline=None, max_examples=10)
+def test_hnsw_rebuild_with_params(
+    records_to_add: int,
+    space: Optional[DistanceMetric],
+    batch_size: Optional[int],
+    sync_threshold: Optional[int],
+    m: Optional[int],
+    construction_ef: Optional[int],
+    search_ef: Optional[int],
+    num_threads: Optional[int],
+    resize_factor: Optional[float],
+) -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        client = chromadb.PersistentClient(path=temp_dir)
+        col = client.get_or_create_collection("test_collection")
+        ids = [str(uuid.uuid4()) for _ in range(records_to_add)]
+        documents = [f"document {i}" for i in range(records_to_add)]
+        embeddings = np.random.uniform(0, 1, (records_to_add, 384)).tolist()
+        col.add(ids=ids, documents=documents, embeddings=embeddings)
+        rebuild_hnsw(
+            temp_dir,
+            collection_name="test_collection",
+            space=space,
+            batch_size=batch_size,
+            sync_threshold=sync_threshold,
+            m=m,
+            construction_ef=construction_ef,
+            search_ef=search_ef,
+            num_threads=num_threads,
+            resize_factor=resize_factor,
+            yes=True,
+        )
+        hnsw_details = info_hnsw(temp_dir, "test_collection")
+        assert hnsw_details["space"] == space or DEFAULT_DISTANCE_METRIC
+        assert hnsw_details["batch_size"] == batch_size or DEFAULT_BATCH_SIZE
+        assert (
+            hnsw_details["sync_threshold"] == sync_threshold or DEFAULT_SYNC_THRESHOLD
+        )
+        assert hnsw_details["m"] == m or DEFAULT_M
+        assert (
+            hnsw_details["construction_ef"] == construction_ef
+            or DEFAULT_CONSTRUCTION_EF
+        )
+        assert hnsw_details["search_ef"] == search_ef or DEFAULT_SEARCH_EF
+        assert hnsw_details["num_threads"] == num_threads or DEFAULT_NUM_THREADS
+        assert hnsw_details["resize_factor"] == round(
+            resize_factor or DEFAULT_RESIZE_FACTOR, 2
+        )
