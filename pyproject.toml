@@ -31,7 +31,7 @@ pytest-xdist = "^3.6.1"
 black = "23.3.0"
 pre-commit = "^3.6.0"
 hypothesis = "^6.92.0"
-chromadb = { version = ">=0.4.0,<0.6.0" }
+chromadb = { version = ">=0.4.0,<0.7.0" }
 
 [tool.mypy]
 python_version = "3.9"
