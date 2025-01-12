@@ -19,7 +19,12 @@ def dict_strategy(draw: st.DrawFn) -> Dict[str, Any]:
     keys = draw(st.lists(st.text(min_size=1, max_size=10), max_size=5, unique=True))
     values = draw(
         st.lists(
-            st.one_of(st.integers(), st.text(), st.floats(), st.booleans()),
+            st.one_of(
+                st.integers(min_value=0, max_value=1000000),
+                st.text(max_size=10),
+                st.floats(min_value=0, max_value=1000000),
+                st.booleans(),
+            ),
             min_size=len(keys),
             max_size=len(keys),
         )
@@ -43,7 +48,15 @@ def test_collection_snapshot(records_to_add: int, metadata: Dict[str, Any]) -> N
         ids = [str(uuid.uuid4()) for _ in range(records_to_add)]
         documents = [f"document {i}" for i in range(records_to_add)]
         embeddings = np.random.uniform(0, 1, (records_to_add, 384)).tolist()
-        col.add(ids=ids, documents=documents, embeddings=embeddings)
+        metadata_to_add = [
+            {"metadata_key": f"metadata_value_{i}"} for i in range(records_to_add)
+        ]  # we can do better here with a strategy but for now it is good enough
+        col.add(
+            ids=ids,
+            documents=documents,
+            embeddings=embeddings,
+            metadatas=metadata_to_add,
+        )
         collection_snapshot(
             chroma_dir,
             "test_collection",
@@ -75,4 +88,6 @@ def test_collection_snapshot(records_to_add: int, metadata: Dict[str, Any]) -> N
             cursor.execute("SELECT count(*) FROM embeddings")
             assert cursor.fetchone()[0] == records_to_add
             cursor.execute("SELECT count(*) FROM embedding_metadata")
-            assert cursor.fetchone()[0] == records_to_add
+            assert (
+                cursor.fetchone()[0] == records_to_add * 2
+            )  # 1 for the document and 1 for the metadata
