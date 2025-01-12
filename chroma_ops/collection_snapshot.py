@@ -127,6 +127,7 @@ def collection_snapshot(persist_dir: str, collection: str, output_file: Path) ->
         )
         sys.exit(1)
     validate_chroma_persist_dir(persist_dir)
+    os.makedirs(output_file.parent, exist_ok=True)
     console = Console()
     with get_sqlite_snapshot_connection(output_file.absolute().as_posix()) as conn:
         script = read_script("scripts/snapshot.sql")
