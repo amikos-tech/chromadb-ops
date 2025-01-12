@@ -24,6 +24,29 @@ go install github.com/amikos-tech/chromadb-ops/cmd/chops
 
 ## Usage
 
+### Collection
+
+#### Snapshot
+
+This command creates a snapshot of a collection. It will lock the chroma database while the snapshot is being created to ensure consistency.
+The data is stored in sqlite3 file including all binary indices.
+
+**Python:**
+
+```bash
+chops collection snapshot /path/to/persist_dir --collection <collection_name> -o /path/to/snapshot.sqlite3
+```
+
+**Go:**
+
+> [!NOTE]
+> Coming soon
+
+#### Restore
+
+> [!NOTE]
+> The restore command will come in v0.1.1
+
 ### Info
 
 Gather general information about your persistent Chroma instance. This command is useful to understand what's going on
