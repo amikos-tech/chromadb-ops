@@ -1,5 +1,6 @@
 import multiprocessing
 
+DEFAULT_CHROMA_SQLITE_FILE = "chroma.sqlite3"
 DEFAULT_TOPIC_NAMESPACE = "default"
 DEFAULT_TENANT_ID = "default"
 DEFAULT_DATABASE = "default_database"

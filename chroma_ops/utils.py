@@ -26,6 +26,13 @@ class SqliteMode(str, Enum):
     READ_WRITE = "rw"
 
 
+def get_sqlite_snapshot_connection(snapshot_file: str) -> sqlite3.Connection:
+    with open(snapshot_file, "a"):
+        os.utime(snapshot_file, None)
+    conn = sqlite3.connect(f"file:{snapshot_file}?mode=rw", uri=True)
+    return conn
+
+
 @contextmanager
 def get_sqlite_connection(
     persist_dir: str, mode: SqliteMode = SqliteMode.READ_ONLY
@@ -34,6 +41,10 @@ def get_sqlite_connection(
     sql_file = os.path.join(persist_dir, "chroma.sqlite3")
     if not os.path.exists(sql_file):
         raise ValueError(f"SQLite database file ({sql_file}) does not exist")
+    else:
+        with open(sql_file, "a"):
+            os.utime(sql_file, None)
+
     conn = sqlite3.connect(f"file:{sql_file}?mode={mode.value}", uri=True)
     try:
         yield conn

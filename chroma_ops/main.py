@@ -5,6 +5,7 @@ from chroma_ops.wal import wal_commands
 from chroma_ops.info import command as info_command
 from chroma_ops.clean import command as clean_command
 from chroma_ops.hnsw import hnsw_commands
+from chroma_ops.collection import collection_commands
 
 app = typer.Typer(no_args_is_help=True, help="ChromaDB Ops Commands.")
 
@@ -27,6 +28,10 @@ app.command(
 app.add_typer(hnsw_commands, name="hnsw", help="HNSW index maintenance commands")
 app.add_typer(
     fts_commands, name="fts", help="Full Text Search index maintenance commands"
+)
+
+app.add_typer(
+    collection_commands, name="collection", help="Collection maintenance commands"
 )
 
 if __name__ == "__main__":
