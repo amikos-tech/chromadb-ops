@@ -37,6 +37,10 @@ The data is stored in sqlite3 file including all binary indices.
 chops collection snapshot /path/to/persist_dir --collection <collection_name> -o /path/to/snapshot.sqlite3
 ```
 
+Additional options:
+
+- `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
+
 **Go:**
 
 > [!NOTE]
@@ -208,6 +212,10 @@ This command cleans up orphanated HNSW segment subdirectories.
 chops db clean /path/to/persist_dir
 ```
 
+Additional options:
+
+- `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
+
 **Go:**
 
 
@@ -324,6 +332,10 @@ This command rebuilds the full-text search index.
 ```bash
 chops fts rebuild /path/to/persist_dir
 ```
+
+Additional options:
+
+- `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
 
 Change the tokenizer to `unicode61` by passing `--tokenizer unicode61` (or `-t unicode61`) option.
 
