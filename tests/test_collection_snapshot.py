@@ -61,6 +61,7 @@ def test_collection_snapshot(records_to_add: int, metadata: Dict[str, Any]) -> N
             chroma_dir,
             "test_collection",
             Path(temp_dir, "snapshot", "snapshot.sqlite3"),
+            yes=True,
         )
         assert os.path.exists(Path(temp_dir, "snapshot", "snapshot.sqlite3"))
         with get_sqlite_snapshot_connection(
