@@ -12,7 +12,7 @@ from chroma_ops.utils import (
 )
 
 
-fts_commands = typer.Typer()
+fts_commands = typer.Typer(no_args_is_help=True)
 
 
 def validate_tokenizer(tokenizer: str) -> None:
