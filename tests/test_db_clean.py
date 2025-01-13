@@ -31,7 +31,7 @@ def test_clean(records_to_add: int, number_of_collections: int) -> None:
                     os.path.join(temp_dir, dir),
                     os.path.join(temp_dir, f"{uuid.uuid4()}"),
                 )
-        clean(temp_dir)
+        clean(temp_dir, yes=True)
         segment_dirs = []
         for dir in os.listdir(temp_dir):
             if os.path.isdir(os.path.join(temp_dir, dir)) and os.path.exists(
