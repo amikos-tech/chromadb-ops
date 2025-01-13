@@ -47,13 +47,15 @@ chops collection snapshot /path/to/persist_dir --collection <collection_name> -o
 > [!NOTE]
 > The restore command will come in v0.1.1
 
-### Info
+### Database Maintenance
+
+#### Info
 
 Gather general information about your persistent Chroma instance. This command is useful to understand what's going on
 internally in Chroma and to get recommendations or support from the team by providing the output.
 
 ```bash
-chops info /path/to/persist_dir
+chops db info /path/to/persist_dir
 ```
 
 Supported options are:
@@ -65,7 +67,7 @@ Supported options are:
 When sharing larger outputs consider storing the output in a file:
 
 ```bash
-chops info /path/to/persist_dir -p > chroma_info.txt
+chops db info /path/to/persist_dir -p > chroma_info.txt
 ```
 
 Sample output:
@@ -190,6 +192,33 @@ This section presents general Chroma persistent dir info.
 - HNSW Orphan Labels - a set of orphan labels in the HNSW index. These are labels in the HNSW index that are not visible
   to Chroma as they are not part of the metadata. This set should always be empty, if not please report it!!!
 - Fragmentation Level - the fragmentation level of the HNSW index.
+
+
+#### Clean
+
+This command cleans up orphanated HNSW segment subdirectories.
+
+> [!TIP]
+> The command is particularly useful for Microsoft Windows users where deleting collections may leave behind orphaned vector
+> segment directories due to Windows file locking.
+
+**Python:**
+
+```bash
+chops db clean /path/to/persist_dir
+```
+
+**Go:**
+
+
+```bash
+chops db clean /path/to/persist_dir
+```
+
+Additional options:
+
+- `--dry-run` (`-d`) - to see what would be deleted without actually deleting anything.
+
 
 ### WAL Maintenance
 
@@ -318,21 +347,6 @@ chops fts rebuild --tokenizer unicode61 /path/to/persist_dir
 ```
 
 > See [SQLite FTS5 Tokenizers](https://www.sqlite.org/fts5.html#tokenizers) for more information and available tokenizers and their options.
-
-### Clean
-
-This command cleans up orphaned vector segment directories.
-
-```bash
-chops clean /path/to/persist_dir
-```
-
-> [!TIP]
-> The command is particularly useful for windows users where deleting collections may leave behind orphaned vector
-> segment directories due to Windows file locking.
-
-For the `go` version of the tool the command it is also possible to use `--dry-run` option to see what would be deleted
-without actually deleting anything.
 
 
 ### HNSW Maintenance
