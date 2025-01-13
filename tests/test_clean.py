@@ -6,7 +6,7 @@ import uuid
 import chromadb
 import numpy as np
 
-from chroma_ops.clean import clean
+from chroma_ops.db_clean import clean
 from hypothesis import given, settings
 import hypothesis.strategies as st
 
