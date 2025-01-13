@@ -7,7 +7,7 @@ import hypothesis.strategies as st
 import chromadb
 from pytest import CaptureFixture
 
-from chroma_ops.info import info
+from chroma_ops.db_info import info
 
 
 @given(records_to_add=st.sampled_from([1000, 2000, 3000, 10000]))
