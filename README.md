@@ -273,6 +273,10 @@ This command cleans up the committed portion of the WAL and VACUUMs the database
 chops wal clean /path/to/persist_dir
 ```
 
+Additional options:
+
+- `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
+
 **Go:**
 
 > [!NOTE]

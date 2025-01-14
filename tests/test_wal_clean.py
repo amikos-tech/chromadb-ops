@@ -34,7 +34,7 @@ def test_basic_clean(records_to_add: int) -> None:
             assert count.fetchone()[0] == 1
         else:
             assert count.fetchone()[0] == records_to_add
-        clean_wal(temp_dir)
+        clean_wal(temp_dir, yes=True)
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
         assert count.fetchone()[0] < records_to_add
         size_after = get_dir_size(temp_dir)
@@ -58,7 +58,7 @@ def test_clean_skip_collections() -> None:
         cursor = conn.cursor()
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
         assert count.fetchone()[0] == records_to_add
-        clean_wal(temp_dir, skip_collection_names=[col.name])
+        clean_wal(temp_dir, skip_collection_names=[col.name], yes=True)
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
         assert (
             count.fetchone()[0] == records_to_add
