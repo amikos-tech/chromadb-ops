@@ -292,6 +292,10 @@ This commands exports the WAL to a `jsonl` file. The command can be useful in ta
 chops wal export /path/to/persist_dir --out /path/to/export.jsonl
 ```
 
+Additional options:
+
+- `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
+
 > [!NOTE]
 > If --out or -o is not specified the command will print the output to stdout.
 
