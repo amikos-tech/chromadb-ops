@@ -1,6 +1,6 @@
-# Chroma Operations Tools
+# Chroma Maintenance CLI
 
-Tiny collection of utilities to help you managed single-node Chroma instances.
+A collection of utilities to help you managed single-node Chroma instances.
 
 > [!TIP]
 > chroma ops tool relies on internal ChromaDB APIs and breaking changes with new version of Chroma are possible.
@@ -462,33 +462,14 @@ Options:
 
 > Note: You have to mount your persist directory into the container for the commands to work.
 
-
 Building the image:
 
 ```bash
 docker build -t chops .
 ```
 
-#### WAL Commit
+#### Running Commands
 
 ```bash
-docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-ops/chops:latest commit-wal /chroma-data
-```
-
-#### WAL Cleanup
-
-```bash
-docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-ops/chops:latest clean-wal /chroma-data
-```
-
-#### WAL Export
-
-```bash
-docker run -it --rm -v ./persist_dir:/chroma-data -v ./backup:/backup ghcr.io/amikos-tech/chromadb-ops/chops:latest export-wal /chroma-data --out /backup/export.jsonl
-```
-
-#### Full-Text Search Index Rebuild
-
-```bash
-docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-ops/chops:latest rebuild-fts /chroma-data
+docker run -it --rm -v ./persist_dir:/chroma-data ghcr.io/amikos-tech/chromadb-ops/chops:latest <command>
 ```
