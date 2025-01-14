@@ -37,7 +37,7 @@ def test_basic_export(records_to_add: int) -> None:
                 if s["scope"] == SegmentScope.VECTOR
             ]
             _sync_threshold = vector_segments[0]._sync_threshold
-            export_wal(temp_dir, temp_file.name)
+            export_wal(temp_dir, temp_file.name, yes=True)
             assert os.path.exists(temp_file.name)
             if tuple(int(part) for part in chromadb.__version__.split(".")) > (0, 5, 5):
                 if records_to_add % _sync_threshold == 0:
