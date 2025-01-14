@@ -47,7 +47,7 @@ def _copy_collection_to_snapshot_db(
         metadata_segment_id = metadata_segment_id[0]
         segment_dir = os.path.join(persist_dir, vector_segment_id)
         topic = f"persistent://{DEFAULT_TENANT_ID}/{DEFAULT_TOPIC_NAMESPACE}/{collection_id}"
-        table = Table(title="Copying collection to snapshot dataase...")
+        table = Table(title="Copying collection to snapshot database...")
         table.add_column("Table", style="cyan")
         table.add_column("Count", style="magenta")
         console.print(

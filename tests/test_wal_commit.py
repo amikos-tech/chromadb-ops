@@ -56,7 +56,7 @@ def test_basic_commit(records_to_add: int) -> None:
         else:
             assert count.fetchone()[0] == records_to_add
 
-        commit_wal(temp_dir)
+        commit_wal(temp_dir, yes=True)
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
         if tuple(int(part) for part in chromadb.__version__.split(".")) > (0, 5, 5):
             if records_to_add % _sync_threshold == 0:
@@ -112,7 +112,7 @@ def test_commit_skip_collection(records_to_add: int) -> None:
                 assert count.fetchone()[0] <= records_to_add
         else:
             assert count.fetchone()[0] == records_to_add
-        commit_wal(temp_dir, skip_collection_names=["test"])
+        commit_wal(temp_dir, skip_collection_names=["test"], yes=True)
         count = cursor.execute("SELECT count(*) FROM embeddings_queue")
         if tuple(int(part) for part in chromadb.__version__.split(".")) > (0, 5, 5):
             if records_to_add % _sync_threshold == 0:
@@ -136,6 +136,8 @@ def test_empty_collections(capsys: CaptureFixture[str]) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
         client.create_collection("test")
-        commit_wal(temp_dir, skip_collection_names=["test"])
+        commit_wal(temp_dir, skip_collection_names=["test"], yes=True)
         captured = capsys.readouterr()
-        assert "Ignoring skipped collection test" in captured.err
+        print(captured.out)
+        assert "Skipped" in captured.out
+        assert "test" in captured.out
