@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import os
-import sys
 from typing import Optional, Sequence
 import typer
 from chromadb import __version__ as chroma_version
@@ -14,6 +13,7 @@ from chroma_ops.utils import (
     decode_seq_id,
 )
 from chroma_ops.constants import DEFAULT_TENANT_ID, DEFAULT_TOPIC_NAMESPACE
+from rich.console import Console
 
 
 def clean_wal(
@@ -21,9 +21,11 @@ def clean_wal(
     skip_collection_names: Optional[Sequence[str]] = None,
     tenant: Optional[str] = DEFAULT_TENANT_ID,
     topic_namespace: Optional[str] = DEFAULT_TOPIC_NAMESPACE,
+    yes: Optional[bool] = False,
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
-    typer.echo(f"Size before: {get_dir_size(persist_dir)}", file=sys.stderr)
+    console = Console()
+    console.print(f"[green]Size before: {get_dir_size(persist_dir)}[/green]")
     with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
         cursor = conn.cursor()
         if int(chroma_version.split(".")[1]) <= 4:
@@ -37,6 +39,17 @@ def clean_wal(
 
         results = cursor.fetchall()
         wal_cleanup_queries = []
+        if len(results) == 0:
+            console.print("[green]No WAL entries found. Nothing to clean up.[/green]")
+            return
+        if not yes:
+            if not typer.confirm(
+                f"\nAre you sure you want to clean up the WAL in {persist_dir}? This action will delete all WAL entries that are not committed to the HNSW index.",
+                default=False,
+                show_default=True,
+            ):
+                console.print("[yellow]WAL cleanup cancelled by user[/yellow]")
+                return
         for row in results:
             if (
                 skip_collection_names
@@ -69,6 +82,7 @@ def clean_wal(
                     f"DELETE FROM embeddings_queue WHERE seq_id < {max_seq_id} AND topic='{topic}';"
                 )
             else:
+                # TODO this way of getting the hnsw space might be wrong going forward with 0.6.x
                 hnsw_space = cursor.execute(
                     "select str_value from collection_metadata where collection_id=? and key='hnsw:space'",
                     (collection_id,),
@@ -85,7 +99,7 @@ def clean_wal(
                         f"DELETE FROM embeddings_queue WHERE seq_id IN ({','.join([str(i) for i in list_of_ids[batch:batch + batch_size]])});"
                     )
         if len(wal_cleanup_queries) > 0:
-            typer.echo("Cleaning up WAL", file=sys.stderr)
+            console.print("[green]Cleaning up WAL[/green]")
             wal_cleanup_queries.insert(
                 0, "BEGIN EXCLUSIVE;"
             )  # locking the DB exclusively to prevent other processes from accessing it
@@ -94,7 +108,9 @@ def clean_wal(
             cursor.executescript("\n".join(wal_cleanup_queries))
         # Close the cursor and connection
         cursor.close()
-    typer.echo(f"Size after: {get_dir_size(persist_dir)}", file=sys.stderr)
+    console.print(
+        f"[green]WAL cleaned up. Size after: {get_dir_size(persist_dir)}[/green]"
+    )
 
 
 def command(
@@ -105,5 +121,8 @@ def command(
         "-s",
         help="Comma separated list of collection names to skip",
     ),
+    yes: Optional[bool] = typer.Option(
+        False, "--yes", "-y", help="Skip confirmation prompt"
+    ),
 ) -> None:
-    clean_wal(persist_dir, skip_collection_names=skip_collection_names)
+    clean_wal(persist_dir, skip_collection_names=skip_collection_names, yes=yes)
