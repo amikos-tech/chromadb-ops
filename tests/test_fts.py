@@ -32,7 +32,7 @@ def test_rebuild_fts() -> None:
             col.get(where_document={"$contains": "document 0"})
 
         assert "no such table: embedding_fulltext_search" in str(e)
-        rebuild_fts(temp_dir)
+        rebuild_fts(temp_dir, yes=True)
         fixed_temp_dir = os.path.join(temp_dir, "fixed")
         shutil.copytree(temp_dir, fixed_temp_dir)
         client = chromadb.PersistentClient(path=fixed_temp_dir)
@@ -74,7 +74,7 @@ def test_rebuild_fts_with_unicode61() -> None:
 
         fixed_temp_dir = os.path.join(temp_dir, "fixed")
         shutil.copytree(temp_dir, fixed_temp_dir)
-        rebuild_fts(fixed_temp_dir, tokenizer="unicode61")
+        rebuild_fts(fixed_temp_dir, tokenizer="unicode61", yes=True)
         client = chromadb.PersistentClient(path=fixed_temp_dir)
         col = client.get_collection("test")
         res_after = col.get(where_document={"$contains": "순매"})
