@@ -10,6 +10,7 @@ from chroma_ops.constants import DEFAULT_TENANT_ID, DEFAULT_TOPIC_NAMESPACE
 from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
+    print_chroma_version,
     validate_chroma_persist_dir,
 )
 
@@ -42,6 +43,7 @@ def export_wal(
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
     console = Console(stderr=True)
+    print_chroma_version(console)
     table = Table(title="Exporting WAL")
     table.add_column("Collection", style="cyan")
     table.add_column("WAL Entries", style="magenta")

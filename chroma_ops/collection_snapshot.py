@@ -11,6 +11,7 @@ from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
     get_sqlite_snapshot_connection,
+    print_chroma_version,
     read_script,
     validate_chroma_persist_dir,
 )
@@ -227,6 +228,7 @@ def collection_snapshot(
         )
         sys.exit(1)
     validate_chroma_persist_dir(persist_dir)
+    print_chroma_version(console)
     if output_file.exists():
         if not yes:
             if not typer.confirm(

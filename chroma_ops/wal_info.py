@@ -6,6 +6,7 @@ from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
     list_collections,
+    print_chroma_version,
     validate_chroma_persist_dir,
 )
 from rich.console import Console
@@ -15,6 +16,7 @@ from rich.table import Table
 def info_wal(persist_dir: str) -> List[Tuple[str, str, int]]:
     validate_chroma_persist_dir(persist_dir)
     console = Console()
+    print_chroma_version(console)
     with get_sqlite_connection(persist_dir, SqliteMode.READ_ONLY) as conn:
         client = chromadb.PersistentClient(path=persist_dir)
         cursor = conn.cursor()

@@ -8,6 +8,7 @@ import typer
 from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
+    print_chroma_version,
     validate_chroma_persist_dir,
 )
 
@@ -17,6 +18,7 @@ def clean(persist_dir: str, yes: Optional[bool] = False) -> None:
     with get_sqlite_connection(persist_dir, SqliteMode.READ_ONLY) as conn:
         console = Console()
         cursor = conn.cursor()
+        print_chroma_version(console)
         console.print("Cleaning up orphanated segment dirs...")
         query = "SELECT id FROM segments WHERE scope = 'VECTOR';"
         cursor.execute(query)

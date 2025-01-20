@@ -7,6 +7,7 @@ import typer
 from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
+    print_chroma_version,
     validate_chroma_persist_dir,
 )
 from rich.console import Console
@@ -23,6 +24,7 @@ def config_wal(
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
     console = Console()
+    print_chroma_version(console)
     with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
         cursor = conn.cursor()
         try:

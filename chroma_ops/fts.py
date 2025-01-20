@@ -7,6 +7,7 @@ from chroma_ops.constants import DEFAULT_TOKENIZER
 from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
+    print_chroma_version,
     validate_chroma_persist_dir,
     read_script,
 )
@@ -38,6 +39,7 @@ def rebuild_fts(
     validate_chroma_persist_dir(persist_dir)
     validate_tokenizer(tokenizer)
     console = Console()
+    print_chroma_version(console)
     if not yes:
         if not typer.confirm(
             f"\nAre you sure you want to rebuild the FTS index in {persist_dir}? This action will drop the existing FTS index and create a new one.",

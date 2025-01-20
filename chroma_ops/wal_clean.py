@@ -6,6 +6,7 @@ from chromadb import __version__ as chroma_version
 from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
+    print_chroma_version,
     validate_chroma_persist_dir,
     get_hnsw_index_ids,
     get_dir_size,
@@ -25,6 +26,7 @@ def clean_wal(
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
     console = Console()
+    print_chroma_version(console)
     console.print(f"[green]Size before: {get_dir_size(persist_dir)}[/green]")
     with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
         cursor = conn.cursor()
