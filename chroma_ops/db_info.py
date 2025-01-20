@@ -10,6 +10,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.rule import Rule
 from rich.table import Table
 
+from chroma_ops.constants import DEFAULT_TENANT_ID, DEFAULT_TOPIC_NAMESPACE
 from chroma_ops.utils import (
     SqliteMode,
     list_collections,
@@ -27,6 +28,8 @@ def info(
     persist_dir: str,
     skip_collection_names: Optional[Sequence[str]] = None,
     privacy_mode: Optional[bool] = False,
+    tenant: Optional[str] = DEFAULT_TENANT_ID,
+    topic_namespace: Optional[str] = DEFAULT_TOPIC_NAMESPACE,
 ) -> Dict[str, Any]:
     console = Console()
     validate_chroma_persist_dir(persist_dir)
@@ -170,10 +173,9 @@ def info(
                         ...
                     collection["segments"].append(segment)
                 # Get WAL entries per collection
+                topic = f"persistent://{tenant}/{topic_namespace}/{collection['id']}"
                 query = "SELECT count(*) FROM embeddings_queue WHERE topic = ?;"
-                cursor.execute(
-                    query, [f"persistent://default/default/{collection['id']}"]
-                )
+                cursor.execute(query, [topic])
                 results = cursor.fetchall()
                 collection["wal_entries"] = results[0][0]
                 collection_data[cname] = collection
