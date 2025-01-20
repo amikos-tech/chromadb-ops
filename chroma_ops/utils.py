@@ -10,6 +10,7 @@ from chromadb import Collection
 import chromadb
 from chromadb import __version__ as chroma_version
 import hnswlib
+from rich.console import Console
 
 
 def validate_chroma_persist_dir(persist_dir: str) -> None:
@@ -182,3 +183,10 @@ def check_disk_space(source_dir: str, target_dir: str) -> bool:
     if free_space < required_space:
         return False
     return True
+
+
+def print_chroma_version(console: Console) -> None:
+    """Print the ChromaDB version"""
+    console.print(
+        f"[bold green]ChromaDB version[/bold green]: [bold blue]{chroma_version}[/bold blue]"
+    )

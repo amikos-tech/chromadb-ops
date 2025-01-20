@@ -15,6 +15,7 @@ from chroma_ops.utils import (
     SqliteMode,
     list_collections,
     get_sqlite_connection,
+    print_chroma_version,
     validate_chroma_persist_dir,
     get_dir_size,
     decode_seq_id,
@@ -33,6 +34,7 @@ def info(
 ) -> Dict[str, Any]:
     console = Console()
     validate_chroma_persist_dir(persist_dir)
+    print_chroma_version(console)
     export_data = {}
     chroma_version = chromadb.__version__
     export_data["chroma_version"] = chroma_version

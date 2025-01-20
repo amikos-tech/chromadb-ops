@@ -16,6 +16,7 @@ from chroma_ops.utils import (
     SqliteMode,
     check_disk_space,
     get_sqlite_connection,
+    print_chroma_version,
     validate_chroma_persist_dir,
     get_dir_size,
     PersistentData,
@@ -380,6 +381,7 @@ def rebuild_hnsw(
     """Rebuilds the HNSW index"""
     validate_chroma_persist_dir(persist_dir)
     console = Console()
+    print_chroma_version(console)
     with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
         # lock the database to ensure no new data is added while we are rebuilding the index
         conn.execute("BEGIN EXCLUSIVE")
@@ -513,6 +515,7 @@ def info_hnsw(
 ) -> HnswDetails:
     validate_chroma_persist_dir(persist_dir)
     console = Console()
+    print_chroma_version(console)
     with get_sqlite_connection(persist_dir, SqliteMode.READ_ONLY) as conn:
         try:
             hnsw_details = _get_hnsw_details(
@@ -539,6 +542,7 @@ def modify_runtime_config(
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
     console = Console()
+    print_chroma_version(console)
     with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
         conn.execute("BEGIN EXCLUSIVE")
         try:

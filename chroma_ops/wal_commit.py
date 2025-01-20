@@ -13,6 +13,7 @@ from chroma_ops.constants import DEFAULT_TENANT_ID, DEFAULT_TOPIC_NAMESPACE
 from chroma_ops.utils import (
     SqliteMode,
     get_sqlite_connection,
+    print_chroma_version,
     validate_chroma_persist_dir,
 )
 from rich.table import Table
@@ -29,6 +30,7 @@ def commit_wal(
     validate_chroma_persist_dir(persist_dir)
     skip_collection_names = skip_collection_names or []
     console = Console()
+    print_chroma_version(console)
     collections_to_commit = []
     vector_segments = []
     skipped_collections_table = Table(title="Skipped Collections")
