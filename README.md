@@ -13,7 +13,7 @@ A collection of utilities to help you managed single-node Chroma instances.
 ### Python
 
 ```bash
-pip install chromadb-ops
+pip install --upgrade chromadb-ops
 ```
 
 ### Go
