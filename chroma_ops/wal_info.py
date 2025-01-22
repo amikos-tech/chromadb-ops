@@ -11,6 +11,7 @@ from chroma_ops.utils import (
 )
 from rich.console import Console
 from rich.table import Table
+import json
 
 
 def info_wal(persist_dir: str) -> List[Tuple[str, str, int]]:
@@ -23,6 +24,19 @@ def info_wal(persist_dir: str) -> List[Tuple[str, str, int]]:
         all_collections = list_collections(client)
         collection_topics = {}
         stats = []
+        current_config = cursor.execute(
+            """SELECT config_json_str FROM embeddings_queue_config"""
+        ).fetchone()
+        current_config = json.loads(current_config[0])
+        console.print("")
+        if current_config["automatically_purge"] is True:
+            console.print(
+                "[yellow]WAL config is set to: [bold green]auto purge[/bold green].[/yellow]"
+            )
+        else:
+            console.print(
+                "[yellow]WAL config is set to: [bold red]not auto purge[/bold red].[/yellow]"
+            )
         for col in all_collections:
             collection_topics[
                 f"persistent://{DEFAULT_TENANT_ID}/{DEFAULT_TOPIC_NAMESPACE}/{col.id}"
