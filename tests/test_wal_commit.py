@@ -136,7 +136,7 @@ def test_empty_collections(capsys: CaptureFixture[str]) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
         client.create_collection("test")
-        commit_wal(temp_dir, skip_collection_names=["test"], yes=True)
+        commit_wal(temp_dir, yes=True)
         captured = capsys.readouterr()
         print(captured.out)
         assert "Skipped" in captured.out
