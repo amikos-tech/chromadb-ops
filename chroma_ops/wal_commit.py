@@ -51,14 +51,16 @@ def commit_wal(
         for collection in collections:
             if collection[0] not in skip_collection_names:
                 topic = f"persistent://{tenant}/{topic_namespace}/{collection[1]}"
+                wal_group_count = [s[1] for s in wal_topic_groups if s[0] == topic]
                 table.add_row(
                     collection[0],
-                    str([s[1] for s in wal_topic_groups if s[0] == topic][0]),
+                    str(wal_group_count[0] if wal_group_count else 0),
                 )
-                collections_to_commit.append(collection)
-                vector_segments.append(
-                    {"collection_id": collection[1], "id": collection[2]}
-                )
+                if wal_group_count:
+                    collections_to_commit.append(collection)
+                    vector_segments.append(
+                        {"collection_id": collection[1], "id": collection[2]}
+                    )
             else:
                 skipped_collections_table.add_row(collection[0])
     console.print(table)
@@ -71,6 +73,7 @@ def commit_wal(
         ):
             console.print("[yellow]WAL commit cancelled by user[/yellow]")
             return
+    # TODO this won't work with Rust bindings, consider alternative approach
     client = chromadb.PersistentClient(path=persist_dir)
 
     for s in vector_segments:
