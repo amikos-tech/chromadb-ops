@@ -7,6 +7,7 @@ import uuid
 
 import chromadb
 import numpy as np
+import pytest
 from chroma_ops.constants import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_CONSTRUCTION_EF,
@@ -253,3 +254,23 @@ def test_hnsw_config(
             if resize_factor
             else DEFAULT_RESIZE_FACTOR
         )
+
+
+def test_hnsw_config_with_invalid_collection_name() -> None:
+    with tempfile.TemporaryDirectory() as temp_dir:
+        client = chromadb.PersistentClient(path=temp_dir)
+        client.get_or_create_collection("test_collection")
+
+        with pytest.raises(ValueError):
+            rebuild_hnsw(
+                temp_dir,
+                collection_name="invalid_collection_name",
+                yes=True,
+            )
+        with pytest.raises(ValueError):
+            modify_runtime_config(
+                temp_dir,
+                "invalid_collection_name",
+                "default_database",
+                yes=True,
+            )
