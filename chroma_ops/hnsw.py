@@ -69,6 +69,8 @@ def _get_hnsw_details(
     collection_details = conn.execute(
         "SELECT id,dimension FROM collections WHERE name = ?", (collection_name,)
     ).fetchone()
+    if collection_details is None or len(collection_details) == 0:
+        raise ValueError(f"Collection {collection_name} not found")
     # config = json.loads(collection_details[1])
     config = {}
 
