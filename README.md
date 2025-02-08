@@ -1,5 +1,12 @@
 # Chroma Maintenance CLI
 
+> Silent logs whisper,  
+> indexes drift like lost leaves—  
+> vacuum sweeps the past.  
+>  
+> Tables stand renewed,  
+> queries dance with swift purpose,  
+> data breathes again.
 
 Chroma Ops is designed to help you maintain a healthy Chroma database. It can also be used for inspecting the state of your database.
 
