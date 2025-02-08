@@ -56,13 +56,14 @@ def export_wal(
         ).fetchall()
         for collection in collections:
             topic = f"persistent://{tenant}/{topic_namespace}/{collection[1]}"
-            table.add_row(
-                collection[0],
-                str([s[1] for s in wal_topic_groups if s[0] == topic][0]),
-            )
+            if len([s[1] for s in wal_topic_groups if s[0] == topic]) > 0:
+                table.add_row(
+                    collection[0],
+                    str([s[1] for s in wal_topic_groups if s[0] == topic][0]),
+                )
+
         console.print(table)
         if not yes:
-            console.print("Are you sure you want to export the WAL? (y/N)")
             if not typer.confirm(
                 "\nAre you sure you want to export the WAL?",
                 default=False,
@@ -70,6 +71,7 @@ def export_wal(
             ):
                 console.print("[yellow]WAL export cancelled by user[/yellow]")
                 return
+
         cursor = conn.cursor()
         query = "SELECT * FROM embeddings_queue ORDER BY seq_id ASC;"
         cursor.execute(query)

@@ -23,6 +23,7 @@ def count_lines(file_path: str) -> int:
 def test_basic_export(records_to_add: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
+        client.create_collection("empty")
         col = client.create_collection("test")
         ids_documents = [
             (f"{uuid.uuid4()}", f"document {i}", [0.1] * 1536)
