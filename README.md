@@ -1,9 +1,30 @@
 # Chroma Maintenance CLI
 
-A collection of utilities to help you managed single-node Chroma instances.
+
+Chroma Ops is designed to help you maintain a healthy Chroma database. It can also be used for inspecting the state of your database. 
+
+The following use cases are supported:
+
+- 📦 Database Maintenance
+  - [`db info`](#info) - gathers general information about your Chroma persistent database
+  - [`db clean`](#clean) - cleans up the database from unused files (for now only orphanated HNSW segment directories)
+- 📝 Write-Ahead Log (WAL) Maintenance
+  - [`wal info`](#info-1) - gathers information about the Write-Ahead Log (WAL)
+  - [`wal commit`](#commit) - commits the WAL to all collections with outstanding changes
+  - [`wal clean`](#clean-1) - cleans up the WAL from committed transactions. Recent Chroma version automatically prune the WAL so this is not needed unless you have older version of Chroma or disabled automatic WAL pruning.
+  - [`wal export`](#export) - exports the WAL to a `jsonl` file. This can be used for debugging and for auditing.
+  - [`wal config`](#configuration) - allows you to configure the WAL for your Chroma database.
+- 🔍 Full Text Search (FTS) Maintenance
+  - [`fts rebuild`](#rebuild) - rebuilds the FTS index for all collections or change the tokenizer.
+- 🧬 Vector Index (HNSW) Maintenance
+  - [`hnsw info`](#info-2) - gathers information about the HNSW index for a given collection
+  - [`hnsw rebuild`](#rebuild-1) - rebuilds the HNSW index for a given collection and allows the modification of otherwise immutable (construction-only) parameters. Useful command to keep your HNSW index healthy and prevent fragmentation.
+  - [`hnsw config`](#configuration-1) - allows you to configure the HNSW index for your Chroma database.
+- 📸 Collection Maintenance
+  - [`collection snapshot`](#snapshot) - creates a snapshot of a collection. The snapshots are self-contained and are meant to be used for backup and restore.
 
 > [!TIP]
-> chroma ops tool relies on internal ChromaDB APIs and breaking changes with new version of Chroma are possible.
+> Some of Chroma Ops tool functionality relies on internal Chroma APIs and breaking changes with new version of Chroma are possible.
 
 > [!WARNING]
 > Before you use these tools make sure your Chroma persistent dir, on which you intend to run these tools, is backed up.
@@ -263,7 +284,7 @@ chops wal commit /path/to/persist_dir
 > [!NOTE]
 > Coming soon
 
-#### Cleanup
+#### Clean
 
 This command cleans up the committed portion of the WAL and VACUUMs the database.
 
@@ -307,7 +328,7 @@ Additional options:
 
 #### Configuration
 
-This command helps you configure Chroma WAL behavior.
+This command helps you configure Chroma WAL behavior. Currently only the purge behavior can be configured.
 
 **Python:**
 
@@ -428,7 +449,7 @@ Additional options:
 > [!NOTE]
 > Coming soon
 
-#### Config
+#### Configuration
 
 Allows you to modify the HNSW index configuration at runtime. This command only modifies configuration parameters that can be changed at runtime.
 
