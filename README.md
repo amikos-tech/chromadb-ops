@@ -71,6 +71,36 @@ Options:
 - `--output` (`-o`) - the path to the output snapshot file
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
 
+Example output:
+
+```console
+chops collection snapshot ./smallc --collection test -o snapshot.sqlite3
+ChromaDB version: 0.6.2
+
+Are you sure you want to overwrite /Users/tazarov/experiments/chroma/chromadb-ops/snapshot.sqlite3 file? [y/N]: y
+Bootstrapping snapshot database...
+Snapshot database bootstrapped in /Users/tazarov/experiments/chroma/chromadb-ops/snapshot.sqlite3
+Copying collection test to snapshot database...
+  Copying collection to snapshot   
+            database...            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Table                   ┃ Count ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+│ Embeddings Queue        │ 20    │
+│ Max Seq ID              │ 1     │
+│ Embeddings              │ 20    │
+│ Embedding Metadata      │ 20    │
+│ Segments                │ 2     │
+│ Segment Metadata        │ 3     │
+│ Collections             │ 1     │
+│ Collection Metadata     │ 0     │
+│ HNSW Segment Data Files │ 5     │
+└─────────────────────────┴───────┘
+
+Are you sure you want to copy this collection to the snapshot database? [y/N]: y
+Collection test copied to snapshot database in /Users/tazarov/experiments/chroma/chromadb-ops/snapshot.sqlite3
+```
+
 **Go:**
 
 > [!NOTE]
@@ -246,6 +276,24 @@ chops db clean /path/to/persist_dir
 Options:
 
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
+- `--dry-run` (`-d`) - to see what would be deleted without actually deleting anything.
+
+Example output:
+
+```console
+chops db clean smallc
+ChromaDB version: 0.6.2
+Cleaning up orphanated segment dirs...
+
+                             Orphanated HNSW segment dirs                             
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Segment ID                           ┃ Path                                        ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ 2E9021A8-A767-4339-B2C2-2F4B22C05F1D │ smallc/2E9021A8-A767-4339-B2C2-2F4B22C05F1D │
+└──────────────────────────────────────┴─────────────────────────────────────────────┘
+
+Are you sure you want to delete these segment dirs? [y/N]: 
+```
 
 **Go:**
 
@@ -271,6 +319,21 @@ This command shows the number of records in the WAL for each collection.
 chops wal info /path/to/persist_dir
 ```
 
+Example output:
+
+```console
+chops wal info smallc
+ChromaDB version: 0.6.2
+
+WAL config is set to: auto purge.
+                                         WAL Info                                         
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
+┃ Collection ┃ Topic                                                             ┃ Count ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
+│ test       │ persistent://default/default/97f5234e-d02a-43b8-9909-99447950c949 │ 20    │
+└────────────┴───────────────────────────────────────────────────────────────────┴───────┘
+```
+
 **Go:**
 
 > [!NOTE]
@@ -291,6 +354,30 @@ Options:
 - `--skip` (`-s`) - skip certain collections by running `chops wal commit /path/to/persist_dir --skip <collection_name>`
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
 
+Example output:
+
+```console
+chops wal commit smallc
+ChromaDB version: 0.6.2
+     WAL Commit Summary     
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ Collection ┃ WAL Entries ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ test       │ 20          │
+│ test1      │ 0           │
+└────────────┴─────────────┘
+   Skipped    
+ Collections  
+┏━━━━━━━━━━━━┓
+┃ Collection ┃
+┡━━━━━━━━━━━━┩
+└────────────┘
+
+Are you sure you want to commit the WAL in smallc? As part of the WAL commit action your database will be migrated to currently installed version 0.6.2. [y/N]: y
+Processing index for collection test (0137d64b-8d71-42f5-b0d9-28716647b068) - total vectors in index 20
+WAL commit completed.
+```
+
 **Go:**
 
 > [!NOTE]
@@ -309,6 +396,18 @@ chops wal clean /path/to/persist_dir
 Options:
 
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
+
+Example output:
+
+```console
+chops wal clean smallc                                                                                                                                                                                                                                                                        11:33:36  ☁  main ☂ ⚡ ✭
+ChromaDB version: 0.6.2
+Size before: 429596
+
+Are you sure you want to clean up the WAL in smallc? This action will delete all WAL entries that are not committed to the HNSW index. [y/N]: y
+Cleaning up WAL
+WAL cleaned up. Size after: 388636
+```
 
 **Go:**
 
@@ -333,6 +432,22 @@ Options:
 > [!NOTE]
 > If --out or -o is not specified the command will print the output to stdout.
 
+Example output:
+
+```console
+chops wal export smallc --out wal.jsonl
+ChromaDB version: 0.6.2
+       Exporting WAL        
+┏━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
+┃ Collection ┃ WAL Entries ┃
+┡━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
+│ test       │ 20          │
+└────────────┴─────────────┘
+
+Are you sure you want to export the WAL? [y/N]: y
+Exported 20 rows
+```
+
 **Go:**
 
 > [!NOTE]
@@ -353,6 +468,22 @@ Options:
 - `--purge` option can be set to `auto` (automatically purge the WAL when the number of records in the collection exceeds the number of
   records in the WAL) or `off` (disable automatic purge of the WAL). Automatic WAL purge is enabled by default. The automatic purge keeps your slite3 file smaller and faster, but it makes it hard or impossible to restore Chroma.
 - `--yes` option can be set to `true` (skip confirmation prompt) or `false` (show confirmation prompt). The default is `false`.
+
+Example output:
+
+```console
+chops wal config smallc --purge off
+ChromaDB version: 0.6.2
+                           Current WAL config                            
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Config key                                ┃ Config Change             ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Automatically purge (automatically_purge) │ True (old) -> False (new) │
+└───────────────────────────────────────────┴───────────────────────────┘
+
+Are you sure you want to update the WAL config? [y/N]: y
+WAL config updated successfully!
+```
 
 **Go:**
 
@@ -377,11 +508,19 @@ chops fts rebuild /path/to/persist_dir
 Options:
 
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
-- `--tokenizer` (`-t`) - the tokenizer to use for the index.
-Change the tokenizer to `unicode61` by passing `--tokenizer unicode61` (or `-t unicode61`) option.
+- `--tokenizer` (`-t`) - the tokenizer to use for the index. Change the tokenizer to `unicode61` by passing `--tokenizer unicode61` (or `-t unicode61`) option.
 
-```bash
-chops fts rebuild --tokenizer unicode61 /path/to/persist_dir
+Example output:
+
+```console
+chops fts rebuild --tokenizer unicode61 smallc
+ChromaDB version: 0.6.2
+
+Are you sure you want to rebuild the FTS index in smallc? This action will drop the existing FTS index and create a new one. [y/N]: y
+Rebuilt FTS. Will try to start your Chroma now.
+NOTE: Depending on the size of your documents in Chroma it may take a while for Chroma to start up again.
+Chroma started successfully. FTS rebuilt.
+
 ```
 
 > [!TIP]
@@ -416,6 +555,34 @@ Options:
 
 - `--collection` (`-c`) - the collection name
 - `--verbose` (`-v`) - If specified, the HNSW index will be loaded for more accurate fragmentation level reporting.
+
+Example output:
+
+```console
+chops hnsw info smallc -c test
+ChromaDB version: 0.6.2
+    HNSW details for collection test in default_database database    
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric              ┃ Value                                       ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Space               │ cosine                                      │
+│ Dimensions          │ 384                                         │
+│ EF Construction     │ 200                                         │
+│ EF Search           │ 100                                         │
+│ M                   │ 64                                          │
+│ Number of threads   │ 16                                          │
+│ Resize factor       │ 1.2                                         │
+│ Batch size          │ 100                                         │
+│ Sync threshold      │ 1000                                        │
+│ Segment ID          │ 0137d64b-8d71-42f5-b0d9-28716647b068        │
+│ Path                │ smallc/0137d64b-8d71-42f5-b0d9-28716647b068 │
+│ Has metadata        │ True                                        │
+│ Number of elements  │ 20                                          │
+│ Collection ID       │ 97f5234e-d02a-43b8-9909-99447950c949        │
+│ Index size          │ 41.6KiB                                     │
+│ Fragmentation level │ 0.00% (estimated)                           │
+└─────────────────────┴─────────────────────────────────────────────┘
+```
 
 **Go:**
 
@@ -456,6 +623,65 @@ Options:
 > [!NOTE]
 > All the HNSW index options default to `None` which means no changes will be made if the parameter is not specified. Additionally, any options provided that are identical to the current index configuration will be skipped.
 
+Example output:
+
+```console
+chops hnsw rebuild smallc -c test --m 64 --construction-ef 200
+ChromaDB version: 0.6.2
+    HNSW details for collection test in default_database database    
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric              ┃ Value                                       ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Space               │ cosine                                      │
+│ Dimensions          │ 384                                         │
+│ EF Construction     │ 200                                         │
+│ EF Search           │ 100                                         │
+│ M                   │ 64                                          │
+│ Number of threads   │ 16                                          │
+│ Resize factor       │ 1.2                                         │
+│ Batch size          │ 100                                         │
+│ Sync threshold      │ 1000                                        │
+│ Segment ID          │ 0137d64b-8d71-42f5-b0d9-28716647b068        │
+│ Path                │ smallc/0137d64b-8d71-42f5-b0d9-28716647b068 │
+│ Has metadata        │ True                                        │
+│ Number of elements  │ 20                                          │
+│ Collection ID       │ 97f5234e-d02a-43b8-9909-99447950c949        │
+│ Index size          │ 47.6KiB                                     │
+│ Fragmentation level │ 0.00% (estimated)                           │
+└─────────────────────┴─────────────────────────────────────────────┘
+    HNSW segment config changes     
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━┳━━━━━┓
+┃ Config Key           ┃ Old ┃ New ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━╇━━━━━┩
+│ hnsw:construction_ef │ 100 │ 200 │
+│ hnsw:M               │ 102 │ 64  │
+└──────────────────────┴─────┴─────┘
+
+Are you sure you want to rebuild this index? [y/N]: y
+Backup of old index created at smallc/0137d64b-8d71-42f5-b0d9-28716647b068_backup_20250208100514
+    HNSW details for collection test in default_database database    
+┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric              ┃ Value                                       ┃
+┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Space               │ cosine                                      │
+│ Dimensions          │ 384                                         │
+│ EF Construction     │ 200                                         │
+│ EF Search           │ 100                                         │
+│ M                   │ 64                                          │
+│ Number of threads   │ 16                                          │
+│ Resize factor       │ 1.2                                         │
+│ Batch size          │ 100                                         │
+│ Sync threshold      │ 1000                                        │
+│ Segment ID          │ 0137d64b-8d71-42f5-b0d9-28716647b068        │
+│ Path                │ smallc/0137d64b-8d71-42f5-b0d9-28716647b068 │
+│ Has metadata        │ True                                        │
+│ Number of elements  │ 20                                          │
+│ Collection ID       │ 97f5234e-d02a-43b8-9909-99447950c949        │
+│ Index size          │ 41.6KiB                                     │
+│ Fragmentation level │ 0.00%                                       │
+└─────────────────────┴─────────────────────────────────────────────┘
+```
+
 **Go:**
 
 > [!NOTE]
@@ -485,6 +711,22 @@ Options:
 
 > [!NOTE]
 > All the HNSW index options default to `None` which means no changes will be made if the parameter is not specified. Additionally, any options provided that are identical to the current index configuration will be skipped.
+
+Example output:
+
+```console
+chops hnsw config smallc -c test --search-ef 100
+ChromaDB version: 0.6.2
+ HNSW segment config changes  
+┏━━━━━━━━━━━━━━━━┳━━━━━┳━━━━━┓
+┃ Config Key     ┃ Old ┃ New ┃
+┡━━━━━━━━━━━━━━━━╇━━━━━╇━━━━━┩
+│ hnsw:search_ef │ 110 │ 100 │
+└────────────────┴─────┴─────┘
+
+Are you sure you want to apply these changes? [y/N]: y
+HNSW index configuration modified successfully
+```
 
 **Go:**
 
