@@ -1,7 +1,7 @@
 # Chroma Maintenance CLI
 
 
-Chroma Ops is designed to help you maintain a healthy Chroma database. It can also be used for inspecting the state of your database. 
+Chroma Ops is designed to help you maintain a healthy Chroma database. It can also be used for inspecting the state of your database.
 
 The following use cases are supported:
 
@@ -58,11 +58,11 @@ The data is stored in sqlite3 file including all binary indices.
 chops collection snapshot /path/to/persist_dir --collection <collection_name> -o /path/to/snapshot.sqlite3
 ```
 
-Additional options:
+Options:
 
-- `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
 - `--collection` (`-c`) - the collection name
 - `--output` (`-o`) - the path to the output snapshot file
+- `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
 
 **Go:**
 
@@ -81,11 +81,13 @@ Additional options:
 Gather general information about your persistent Chroma instance. This command is useful to understand what's going on
 internally in Chroma and to get recommendations or support from the team by providing the output.
 
+**Python:**
+
 ```bash
 chops db info /path/to/persist_dir
 ```
 
-Supported options are:
+Options:
 
 - `--skip-collection-names` (`-s`) - to skip specific collections
 - `--privacy-mode` (`-p`) - privacy mode hides paths and collection names so that the output can be shared without
@@ -220,7 +222,6 @@ This section presents general Chroma persistent dir info.
   to Chroma as they are not part of the metadata. This set should always be empty, if not please report it!!!
 - Fragmentation Level - the fragmentation level of the HNSW index.
 
-
 #### Clean
 
 This command cleans up orphanated HNSW segment subdirectories.
@@ -235,7 +236,7 @@ This command cleans up orphanated HNSW segment subdirectories.
 chops db clean /path/to/persist_dir
 ```
 
-Additional options:
+Options:
 
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
 
@@ -246,7 +247,7 @@ Additional options:
 chops db clean /path/to/persist_dir
 ```
 
-Additional options:
+Options:
 
 - `--dry-run` (`-d`) - to see what would be deleted without actually deleting anything.
 
@@ -278,8 +279,10 @@ This command ensures your WAL is committed to binary vector index (HNSW).
 chops wal commit /path/to/persist_dir
 ```
 
-> [!TIP]
-> You can skip certain collections by running `chops wal commit /path/to/persist_dir --skip <collection_name>`
+Options:
+
+- `--skip` (`-s`) - skip certain collections by running `chops wal commit /path/to/persist_dir --skip <collection_name>`
+- `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
 
 **Go:**
 
@@ -296,7 +299,7 @@ This command cleans up the committed portion of the WAL and VACUUMs the database
 chops wal clean /path/to/persist_dir
 ```
 
-Additional options:
+Options:
 
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
 
@@ -315,9 +318,10 @@ This commands exports the WAL to a `jsonl` file. The command can be useful in ta
 chops wal export /path/to/persist_dir --out /path/to/export.jsonl
 ```
 
-Additional options:
+Options:
 
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
+- `--out` (`-o`) - the path to the output file
 
 > [!NOTE]
 > If --out or -o is not specified the command will print the output to stdout.
@@ -326,7 +330,6 @@ Additional options:
 
 > [!NOTE]
 > Coming soon
-
 
 #### Configuration
 
@@ -364,10 +367,10 @@ This command rebuilds the full-text search index.
 chops fts rebuild /path/to/persist_dir
 ```
 
-Additional options:
+Options:
 
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
-
+- `--tokenizer` (`-t`) - the tokenizer to use for the index.
 Change the tokenizer to `unicode61` by passing `--tokenizer unicode61` (or `-t unicode61`) option.
 
 ```bash
@@ -402,9 +405,9 @@ chops fts rebuild --tokenizer unicode61 /path/to/persist_dir
 chops hnsw info /path/to/persist_dir --collection <collection_name>
 ```
 
-Additional options:
+Options:
 
-- `--database` (`-d`) - the database name (default: `default_database`)
+- `--collection` (`-c`) - the collection name
 - `--verbose` (`-v`) - If specified, the HNSW index will be loaded for more accurate fragmentation level reporting.
 
 **Go:**
@@ -429,7 +432,7 @@ Use cases:
 chops hnsw rebuild /path/to/persist_dir --collection <collection_name>
 ```
 
-Additional options:
+Options:
 
 - `--backup` (`-b`) - backup the old index. At the end of the rebuild process the location of the backed up index will be printed out. (default: `True`)
 - `--database` (`-d`) - the database name (default: `default_database`)
