@@ -27,10 +27,14 @@ class SqliteMode(str, Enum):
     READ_WRITE = "rw"
 
 
-def get_sqlite_snapshot_connection(snapshot_file: str) -> sqlite3.Connection:
+def get_sqlite_snapshot_connection(
+    snapshot_file: str, mode: Optional[SqliteMode] = SqliteMode.READ_ONLY
+) -> sqlite3.Connection:
+    if mode is None:
+        mode = SqliteMode.READ_ONLY
     with open(snapshot_file, "a"):
         os.utime(snapshot_file, None)
-    conn = sqlite3.connect(f"file:{snapshot_file}?mode=rw", uri=True)
+    conn = sqlite3.connect(f"file:{snapshot_file}?mode={mode.value}", uri=True)
     return conn
 
 
