@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "chromadb-ops"
 version = "0.1.3"
-description = "Tiny unofficial ChromaDB maintenance CLI to help you manage your ChromaDB instance."
+description = "Maintenance CLI for Chroma AI-native database."
 authors = ["Trayan Azarov <trayan.azarov@amikos.tech>"]
 license = "MIT"
 readme = "README.md"
