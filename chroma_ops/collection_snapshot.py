@@ -241,7 +241,9 @@ def collection_snapshot(
         os.remove(output_file.absolute().as_posix())
     os.makedirs(output_file.parent, exist_ok=True)
     console = Console()
-    with get_sqlite_snapshot_connection(output_file.absolute().as_posix()) as conn:
+    with get_sqlite_snapshot_connection(
+        output_file.absolute().as_posix(), mode=SqliteMode.READ_WRITE
+    ) as conn:
         console.print("Bootstrapping snapshot database...")
         script = read_script("scripts/snapshot.sql")
         conn.executescript(script)

@@ -61,6 +61,8 @@ chops collection snapshot /path/to/persist_dir --collection <collection_name> -o
 Additional options:
 
 - `--yes` (`-y`) - skip confirmation prompt (default: `False`, prompt will be shown)
+- `--collection` (`-c`) - the collection name
+- `--output` (`-o`) - the path to the output snapshot file
 
 **Go:**
 
