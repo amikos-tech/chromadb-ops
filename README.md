@@ -619,6 +619,7 @@ Options:
 - `--resize-factor` (`-r`) - the resize factor to use for the index.
 - `--batch-size` (`-b`) - the batch size to use for the index.
 - `--sync-threshold` (`-s`) - the sync threshold to use for the index.
+- `--backup` (`-b`) - backup the old index. At the end of the rebuild process the location of the backed up index will be printed out. (default: `True`)
 
 > [!NOTE]
 > All the HNSW index options default to `None` which means no changes will be made if the parameter is not specified. Additionally, any options provided that are identical to the current index configuration will be skipped.
