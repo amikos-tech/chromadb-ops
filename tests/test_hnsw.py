@@ -1,5 +1,4 @@
 import os
-import random
 import shutil
 import sqlite3
 import tempfile
@@ -28,7 +27,7 @@ from chroma_ops.hnsw import (
 from hypothesis import given, settings
 import hypothesis.strategies as st
 
-from chroma_ops.utils import DistanceMetric, PersistentData
+from chroma_ops.utils import DistanceMetric
 
 
 @given(verbose=st.booleans())
@@ -123,12 +122,14 @@ def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
             details = _get_hnsw_details(conn, temp_dir, "test_collection", verbose=True)
             total_elements_after_rebuild = details["total_elements_added"]
             if should_have_fragmentation:
-                assert total_elements_after_rebuild < total_elements_before_rebuild # if the index is fragmented and needs compaction this also impacts the total elements
+                assert (
+                    total_elements_after_rebuild < total_elements_before_rebuild
+                )  # if the index is fragmented and needs compaction this also impacts the total elements
                 assert details["fragmentation_level"] == 0.0
             else:
-                assert total_elements_after_rebuild<= total_elements_before_rebuild
-        print("details",details["total_elements_added"])
-        print("details",details["max_elements"])
+                assert total_elements_after_rebuild <= total_elements_before_rebuild
+        print("details", details["total_elements_added"])
+        print("details", details["max_elements"])
         # ensure the index is functional after rebuild/compaction
         client._admin_client.clear_system_cache()
         client = chromadb.PersistentClient(path=temp_dir)

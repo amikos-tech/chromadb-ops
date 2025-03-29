@@ -245,12 +245,16 @@ def print_hnsw_details(hnsw_details: HnswDetails) -> None:
     console.print(table)
 
 
-def _update_hnsw_metadata(segment_path: str,elements_added: int) -> None:
+def _update_hnsw_metadata(segment_path: str, elements_added: int) -> None:
     if not os.path.exists(os.path.join(segment_path, "index_metadata.pickle")):
         return
-    pd = PersistentData.load_from_file(os.path.join(segment_path, "index_metadata.pickle"))
+    pd = PersistentData.load_from_file(
+        os.path.join(segment_path, "index_metadata.pickle")
+    )
     pd.total_elements_added = elements_added
-    with open(os.path.join(segment_path, "index_metadata.pickle"), "wb") as metadata_file:
+    with open(
+        os.path.join(segment_path, "index_metadata.pickle"), "wb"
+    ) as metadata_file:
         pickle.dump(pd, metadata_file, pickle.HIGHEST_PROTOCOL)
 
 
@@ -452,7 +456,11 @@ def rebuild_hnsw(
                     )
                     return
                 shutil.copytree(os.path.join(persist_dir, segment_id), temp_persist_dir)
-                max_elements = len(id_to_label)* (final_changes["resize_factor"] if "resize_factor" in final_changes else 1.2)
+                max_elements = len(id_to_label) * (
+                    final_changes["resize_factor"]
+                    if "resize_factor" in final_changes
+                    else 1.2
+                )
                 target_index = hnswlib.Index(space=_space, dim=dimensions)
                 target_index.init_index(
                     max_elements=int(max_elements),
@@ -467,7 +475,9 @@ def rebuild_hnsw(
                 source_index.load_index(
                     os.path.join(persist_dir, segment_id),
                     is_persistent_index=True,
-                    max_elements=len(id_to_label), # we don't need to allocate more than the current number of elements
+                    max_elements=len(
+                        id_to_label
+                    ),  # we don't need to allocate more than the current number of elements
                 )
                 source_index.set_num_threads(_num_threads)
                 values = list(id_to_label.values())
@@ -506,7 +516,9 @@ def rebuild_hnsw(
                 target_index.persist_dirty()
                 target_index.close_file_handles()
                 source_index.close_file_handles()
-                _update_hnsw_metadata(segment_path=temp_persist_dir,elements_added=int(max_elements))
+                _update_hnsw_metadata(
+                    segment_path=temp_persist_dir, elements_added=int(max_elements)
+                )
                 if backup:
                     backup_target = os.path.join(
                         persist_dir,
