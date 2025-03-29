@@ -236,6 +236,8 @@ def print_hnsw_details(hnsw_details: HnswDetails) -> None:
     table.add_row("Path", hnsw_details["path"])
     table.add_row("Has metadata", str(hnsw_details["has_metadata"]))
     table.add_row("Number of elements", str(hnsw_details["num_elements"]))
+    table.add_row("Max elements", str(hnsw_details["max_elements"]))
+    table.add_row("Total elements added", str(hnsw_details["total_elements_added"]))
     table.add_row("Collection ID", str(hnsw_details["collection_id"]))
     table.add_row("Index size", sizeof_fmt(hnsw_details["index_size"]))
     table.add_row(
