@@ -562,26 +562,28 @@ Example output:
 chops hnsw info smallc -c test
 ChromaDB version: 0.6.2
     HNSW details for collection test in default_database database
-┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Metric              ┃ Value                                       ┃
-┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
-│ Space               │ cosine                                      │
-│ Dimensions          │ 384                                         │
-│ EF Construction     │ 200                                         │
-│ EF Search           │ 100                                         │
-│ M                   │ 64                                          │
-│ Number of threads   │ 16                                          │
-│ Resize factor       │ 1.2                                         │
-│ Batch size          │ 100                                         │
-│ Sync threshold      │ 1000                                        │
-│ Segment ID          │ 0137d64b-8d71-42f5-b0d9-28716647b068        │
-│ Path                │ smallc/0137d64b-8d71-42f5-b0d9-28716647b068 │
-│ Has metadata        │ True                                        │
-│ Number of elements  │ 20                                          │
-│ Collection ID       │ 97f5234e-d02a-43b8-9909-99447950c949        │
-│ Index size          │ 41.6KiB                                     │
-│ Fragmentation level │ 0.00% (estimated)                           │
-└─────────────────────┴─────────────────────────────────────────────┘
+┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Metric               ┃ Value                                                 ┃
+┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
+│ Space                │ l2                                                    │
+│ Dimensions           │ 384                                                   │
+│ EF Construction      │ 100                                                   │
+│ EF Search            │ 10                                                    │
+│ M                    │ 16                                                    │
+│ Number of threads    │ 16                                                    │
+│ Resize factor        │ 1.2                                                   │
+│ Batch size           │ 100                                                   │
+│ Sync threshold       │ 1000                                                  │
+│ Segment ID           │ 7fe1d479-c91a-4732-b1ae-fa459502d4b2                  │
+│ Path                 │ /var/folders/hx/8xkrd64s4vg_m1sdl83bt9h40000gn/T/tmp… │
+│ Has metadata         │ True                                                  │
+│ Number of elements   │ 3874                                                  │
+│ Max elements         │ 3874                                                  │
+│ Total elements added │ 3874                                                  │
+│ Collection ID        │ a47e340c-1a9a-407d-acc5-3da91859dce1                  │
+│ Index size           │ 7.7MiB                                                │
+│ Fragmentation level  │ 0.00%                                                 │
+└──────────────────────┴───────────────────────────────────────────────────────┘
 ```
 
 **Go:**
