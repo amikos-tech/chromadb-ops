@@ -1,11 +1,11 @@
 # Chroma Maintenance CLI
 
-> Silent logs whisper,  
-> indexes drift like lost leaves—  
-> vacuum sweeps the past.  
->  
-> Tables stand renewed,  
-> queries dance with swift purpose,  
+> Silent logs whisper,
+> indexes drift like lost leaves—
+> vacuum sweeps the past.
+>
+> Tables stand renewed,
+> queries dance with swift purpose,
 > data breathes again.
 
 Chroma Ops is designed to help you maintain a healthy Chroma database. It can also be used for inspecting the state of your database.
@@ -81,8 +81,8 @@ Are you sure you want to overwrite /Users/tazarov/experiments/chroma/chromadb-op
 Bootstrapping snapshot database...
 Snapshot database bootstrapped in /Users/tazarov/experiments/chroma/chromadb-ops/snapshot.sqlite3
 Copying collection test to snapshot database...
-  Copying collection to snapshot   
-            database...            
+  Copying collection to snapshot
+            database...
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Table                   ┃ Count ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -285,14 +285,14 @@ chops db clean smallc
 ChromaDB version: 0.6.2
 Cleaning up orphanated segment dirs...
 
-                             Orphanated HNSW segment dirs                             
+                             Orphanated HNSW segment dirs
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Segment ID                           ┃ Path                                        ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
 │ 2E9021A8-A767-4339-B2C2-2F4B22C05F1D │ smallc/2E9021A8-A767-4339-B2C2-2F4B22C05F1D │
 └──────────────────────────────────────┴─────────────────────────────────────────────┘
 
-Are you sure you want to delete these segment dirs? [y/N]: 
+Are you sure you want to delete these segment dirs? [y/N]:
 ```
 
 **Go:**
@@ -326,7 +326,7 @@ chops wal info smallc
 ChromaDB version: 0.6.2
 
 WAL config is set to: auto purge.
-                                         WAL Info                                         
+                                         WAL Info
 ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┓
 ┃ Collection ┃ Topic                                                             ┃ Count ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━┩
@@ -359,15 +359,15 @@ Example output:
 ```console
 chops wal commit smallc
 ChromaDB version: 0.6.2
-     WAL Commit Summary     
+     WAL Commit Summary
 ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
 ┃ Collection ┃ WAL Entries ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
 │ test       │ 20          │
 │ test1      │ 0           │
 └────────────┴─────────────┘
-   Skipped    
- Collections  
+   Skipped
+ Collections
 ┏━━━━━━━━━━━━┓
 ┃ Collection ┃
 ┡━━━━━━━━━━━━┩
@@ -437,7 +437,7 @@ Example output:
 ```console
 chops wal export smallc --out wal.jsonl
 ChromaDB version: 0.6.2
-       Exporting WAL        
+       Exporting WAL
 ┏━━━━━━━━━━━━┳━━━━━━━━━━━━━┓
 ┃ Collection ┃ WAL Entries ┃
 ┡━━━━━━━━━━━━╇━━━━━━━━━━━━━┩
@@ -474,7 +474,7 @@ Example output:
 ```console
 chops wal config smallc --purge off
 ChromaDB version: 0.6.2
-                           Current WAL config                            
+                           Current WAL config
 ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Config key                                ┃ Config Change             ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -561,7 +561,7 @@ Example output:
 ```console
 chops hnsw info smallc -c test
 ChromaDB version: 0.6.2
-    HNSW details for collection test in default_database database    
+    HNSW details for collection test in default_database database
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Metric              ┃ Value                                       ┃
 ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -628,7 +628,7 @@ Example output:
 ```console
 chops hnsw rebuild smallc -c test --m 64 --construction-ef 200
 ChromaDB version: 0.6.2
-    HNSW details for collection test in default_database database    
+    HNSW details for collection test in default_database database
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Metric              ┃ Value                                       ┃
 ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -649,7 +649,7 @@ ChromaDB version: 0.6.2
 │ Index size          │ 47.6KiB                                     │
 │ Fragmentation level │ 0.00% (estimated)                           │
 └─────────────────────┴─────────────────────────────────────────────┘
-    HNSW segment config changes     
+    HNSW segment config changes
 ┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━┳━━━━━┓
 ┃ Config Key           ┃ Old ┃ New ┃
 ┡━━━━━━━━━━━━━━━━━━━━━━╇━━━━━╇━━━━━┩
@@ -659,7 +659,7 @@ ChromaDB version: 0.6.2
 
 Are you sure you want to rebuild this index? [y/N]: y
 Backup of old index created at smallc/0137d64b-8d71-42f5-b0d9-28716647b068_backup_20250208100514
-    HNSW details for collection test in default_database database    
+    HNSW details for collection test in default_database database
 ┏━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Metric              ┃ Value                                       ┃
 ┡━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┩
@@ -717,7 +717,7 @@ Example output:
 ```console
 chops hnsw config smallc -c test --search-ef 100
 ChromaDB version: 0.6.2
- HNSW segment config changes  
+ HNSW segment config changes
 ┏━━━━━━━━━━━━━━━━┳━━━━━┳━━━━━┓
 ┃ Config Key     ┃ Old ┃ New ┃
 ┡━━━━━━━━━━━━━━━━╇━━━━━╇━━━━━┩
