@@ -1,4 +1,5 @@
 import os
+import random
 import shutil
 import sqlite3
 import tempfile
@@ -27,7 +28,7 @@ from chroma_ops.hnsw import (
 from hypothesis import given, settings
 import hypothesis.strategies as st
 
-from chroma_ops.utils import DistanceMetric
+from chroma_ops.utils import DistanceMetric, PersistentData
 
 
 @given(verbose=st.booleans())
@@ -78,9 +79,9 @@ def test_hnsw_info(verbose: bool) -> None:
 
 @given(
     records_to_add=st.integers(min_value=100, max_value=10000),
-    records_to_delete=st.integers(min_value=10, max_value=1000),
+    records_to_delete=st.integers(min_value=100, max_value=5000),
 )
-@settings(deadline=None, max_examples=5)
+@settings(deadline=None, max_examples=10)
 def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         records_to_delete = min(records_to_delete, records_to_add)
@@ -95,9 +96,9 @@ def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
         )
         col.add(ids=ids, documents=documents, embeddings=embeddings)
         col.delete(ids=random_ids_to_delete.tolist())
-        conn = sqlite3.connect(sql_file)
-        details = _get_hnsw_details(conn, temp_dir, "test_collection", verbose=True)
-        conn.close()
+        with sqlite3.connect(sql_file) as conn:
+            details = _get_hnsw_details(conn, temp_dir, "test_collection", verbose=True)
+        total_elements_before_rebuild = details["total_elements_added"]
         should_have_fragmentation = False
         if (
             records_to_add >= details["sync_threshold"]
@@ -118,12 +119,16 @@ def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
             collection_name="test_collection",
             yes=True,
         )
-        if should_have_fragmentation:
-            conn = sqlite3.connect(sql_file)
+        with sqlite3.connect(sql_file) as conn:
             details = _get_hnsw_details(conn, temp_dir, "test_collection", verbose=True)
-            assert details["fragmentation_level"] == 0.0
-            conn.close()
-
+            total_elements_after_rebuild = details["total_elements_added"]
+            if should_have_fragmentation:
+                assert total_elements_after_rebuild < total_elements_before_rebuild # if the index is fragmented and needs compaction this also impacts the total elements
+                assert details["fragmentation_level"] == 0.0
+            else:
+                assert total_elements_after_rebuild<= total_elements_before_rebuild
+        print("details",details["total_elements_added"])
+        print("details",details["max_elements"])
         # ensure the index is functional after rebuild/compaction
         client._admin_client.clear_system_cache()
         client = chromadb.PersistentClient(path=temp_dir)

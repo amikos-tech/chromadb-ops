@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import pickle
 import shutil
 import sqlite3
 import tempfile
@@ -48,6 +49,9 @@ class HnswDetails(TypedDict):
     resize_factor: float
     batch_size: int
     sync_threshold: int
+    total_elements: int
+    max_elements: int
+    total_elements_added: int
     segment_id: str
     path: str
     has_metadata: bool
@@ -137,7 +141,9 @@ def _get_hnsw_details(
     id_to_label = {}
     fragmentation_level = 0.0
     fragmentation_level_estimated = True
-
+    total_elements = 0
+    max_elements = 0
+    total_elements_added = 0
     if os.path.exists(
         os.path.join(persist_dir, segment_id[0], "index_metadata.pickle")
     ):
@@ -146,6 +152,7 @@ def _get_hnsw_details(
             os.path.join(persist_dir, segment_id[0], "index_metadata.pickle")
         )
         id_to_label = persistent_data.id_to_label
+        total_elements_added = persistent_data.total_elements_added
         if len(id_to_label) > 0:
             fragmentation_level = (
                 (persistent_data.total_elements_added - len(id_to_label))
@@ -165,6 +172,8 @@ def _get_hnsw_details(
             index.set_num_threads(num_threads)
             index.set_ef(search_ef)
             total_elements = index.element_count
+            max_elements = index.max_elements
+            total_elements_added = index.element_count
             if total_elements > 0:
                 fragmentation_level = (
                     (total_elements - len(id_to_label)) / total_elements * 100
@@ -198,6 +207,9 @@ def _get_hnsw_details(
         index_size=get_dir_size(os.path.join(persist_dir, segment_id[0])),
         fragmentation_level=fragmentation_level,
         fragmentation_level_estimated=fragmentation_level_estimated,
+        total_elements=total_elements,
+        max_elements=max_elements,
+        total_elements_added=total_elements_added,
     )
 
 
@@ -231,6 +243,15 @@ def print_hnsw_details(hnsw_details: HnswDetails) -> None:
         f"{hnsw_details['fragmentation_level']:.2f}% {'(estimated)' if hnsw_details['fragmentation_level_estimated'] else ''}",
     )
     console.print(table)
+
+
+def _update_hnsw_metadata(segment_path: str,elements_added: int) -> None:
+    if not os.path.exists(os.path.join(segment_path, "index_metadata.pickle")):
+        return
+    pd = PersistentData.load_from_file(os.path.join(segment_path, "index_metadata.pickle"))
+    pd.total_elements_added = elements_added
+    with open(os.path.join(segment_path, "index_metadata.pickle"), "wb") as metadata_file:
+        pickle.dump(pd, metadata_file, pickle.HIGHEST_PROTOCOL)
 
 
 def _prepare_hnsw_segment_config_changes(
@@ -431,9 +452,10 @@ def rebuild_hnsw(
                     )
                     return
                 shutil.copytree(os.path.join(persist_dir, segment_id), temp_persist_dir)
+                max_elements = len(id_to_label)* (final_changes["resize_factor"] if "resize_factor" in final_changes else 1.2)
                 target_index = hnswlib.Index(space=_space, dim=dimensions)
                 target_index.init_index(
-                    max_elements=len(id_to_label),
+                    max_elements=int(max_elements),
                     ef_construction=construction_ef,
                     M=_m,
                     is_persistent_index=True,
@@ -445,7 +467,7 @@ def rebuild_hnsw(
                 source_index.load_index(
                     os.path.join(persist_dir, segment_id),
                     is_persistent_index=True,
-                    max_elements=len(id_to_label),
+                    max_elements=len(id_to_label), # we don't need to allocate more than the current number of elements
                 )
                 source_index.set_num_threads(_num_threads)
                 values = list(id_to_label.values())
@@ -484,6 +506,7 @@ def rebuild_hnsw(
                 target_index.persist_dirty()
                 target_index.close_file_handles()
                 source_index.close_file_handles()
+                _update_hnsw_metadata(segment_path=temp_persist_dir,elements_added=int(max_elements))
                 if backup:
                     backup_target = os.path.join(
                         persist_dir,
