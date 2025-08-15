@@ -1,7 +1,8 @@
 import os.path
 import tempfile
 import uuid
-
+from packaging import version
+import pytest
 from chromadb.segment import VectorReader
 from chromadb.types import SegmentScope
 from hypothesis import given, settings
@@ -21,6 +22,8 @@ def count_lines(file_path: str) -> int:
 @given(records_to_add=st.sampled_from([1, 100, 500, 10000]))
 @settings(deadline=None)
 def test_basic_export(records_to_add: int) -> None:
+    if version.parse(chromadb.__version__) > version.parse("1.0.0"):
+        pytest.skip("Requires chromadb < 1.0.0")
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
         client.create_collection("empty")

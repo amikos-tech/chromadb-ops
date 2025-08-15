@@ -341,6 +341,9 @@ WAL config is set to: auto purge.
 
 #### Commit
 
+> ![WARNING]
+> ** Works in Chroma < 1.0.0
+
 This command ensures your WAL is committed to binary vector index (HNSW).
 
 **Python:**
@@ -415,6 +418,9 @@ WAL cleaned up. Size after: 388636
 > Coming soon
 
 #### Export
+
+> ![WARNING]
+> ** Works in Chroma < 1.0.0
 
 This commands exports the WAL to a `jsonl` file. The command can be useful in taking backups of the WAL.
 

@@ -4,7 +4,7 @@ import sqlite3
 import tempfile
 from typing import Optional
 import uuid
-
+from packaging import version
 import chromadb
 import numpy as np
 import pytest
@@ -32,7 +32,57 @@ from chroma_ops.utils import DistanceMetric
 
 @given(verbose=st.booleans())
 @settings(deadline=None)
+def test_hnsw_info10(verbose: bool) -> None:
+    if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+        pytest.skip("Requires chromadb >= 1.0.0")
+    with tempfile.TemporaryDirectory() as temp_dir:
+        client = chromadb.PersistentClient(path=temp_dir)
+        col = client.create_collection(
+            "test",
+            configuration={
+                "hnsw": {
+                    "ef_search": 101,
+                    "ef_construction": 101,
+                    "sync_threshold": 1001,
+                    "max_neighbors": 17,
+                }
+            },
+        )
+        col.add(
+            ids=["1", "2", "3"],
+            documents=["document 1", "document 2", "document 3"],
+            embeddings=[[0.1] * 384] * 3,
+        )
+        info_dict = info_hnsw(temp_dir, "test", verbose=verbose)
+        assert info_dict["fragmentation_level"] == 0.0
+        assert info_dict["collection_id"] == str(col.id)
+        assert (
+            info_dict["num_elements"] == 0
+        )  # with too few elements, metadata is not created
+        assert info_dict["dimensions"] == 384
+        assert info_dict["construction_ef"] == 101
+        assert info_dict["search_ef"] == 101
+        assert info_dict["m"] == 17
+        assert info_dict["sync_threshold"] == 1001
+        assert "segment_id" in info_dict
+        assert info_dict["path"] == os.path.join(temp_dir, info_dict["segment_id"])
+        assert (
+            info_dict["has_metadata"] is False
+        )  # with too few elements, metadata is not created
+        assert "index_size" in info_dict
+        assert info_dict["fragmentation_level"] == 0.0
+        assert info_dict["fragmentation_level_estimated"] is True
+        shutil.copy2(
+            os.path.join(temp_dir, "chroma.sqlite3"),
+            os.path.join(".", "chroma_before.sqlite3"),
+        )
+
+
+@given(verbose=st.booleans())
+@settings(deadline=None)
 def test_hnsw_info(verbose: bool) -> None:
+    if version.parse(chromadb.__version__) >= version.parse("1.0.0"):
+        pytest.skip("Requires chromadb <= 1.0.0")
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
         col = client.create_collection(
@@ -77,7 +127,7 @@ def test_hnsw_info(verbose: bool) -> None:
 
 
 @given(
-    records_to_add=st.integers(min_value=100, max_value=10000),
+    records_to_add=st.integers(min_value=100, max_value=5300),
     records_to_delete=st.integers(min_value=100, max_value=5000),
 )
 @settings(deadline=None, max_examples=10)
@@ -103,11 +153,15 @@ def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
             records_to_add >= details["sync_threshold"]
             or records_to_add + records_to_delete >= details["sync_threshold"]
         ):
-            if records_to_delete > details["sync_threshold"]:
-                assert details["fragmentation_level"] > 0.0
-            elif int(
-                (records_to_add + records_to_delete) / details["sync_threshold"]
-            ) > int(records_to_add / details["sync_threshold"]):
+            if (
+                records_to_delete >= details["sync_threshold"]
+                or records_to_add == records_to_delete
+                or (
+                    records_to_add + records_to_delete > details["sync_threshold"]
+                    and records_to_add < details["sync_threshold"]
+                    and records_to_delete < details["sync_threshold"]
+                )
+            ):
                 assert details["fragmentation_level"] > 0.0
             else:
                 assert details["fragmentation_level"] == 0.0
@@ -128,8 +182,6 @@ def test_hnsw_rebuild(records_to_add: int, records_to_delete: int) -> None:
                 assert details["fragmentation_level"] == 0.0
             else:
                 assert total_elements_after_rebuild <= total_elements_before_rebuild
-        print("details", details["total_elements_added"])
-        print("details", details["max_elements"])
         # ensure the index is functional after rebuild/compaction
         client._admin_client.clear_system_cache()
         client = chromadb.PersistentClient(path=temp_dir)
@@ -175,6 +227,7 @@ def test_hnsw_rebuild_with_params(
 ) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
+        records_to_add = min(records_to_add, client.get_max_batch_size())
         col = client.get_or_create_collection("test_collection")
         ids = [str(uuid.uuid4()) for _ in range(records_to_add)]
         documents = [f"document {i}" for i in range(records_to_add)]
@@ -214,10 +267,10 @@ def test_hnsw_rebuild_with_params(
 
 
 @given(
-    records_to_add=st.integers(min_value=100, max_value=10000),
-    batch_size=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
-    sync_threshold=st.one_of(st.none(), st.integers(min_value=100, max_value=10000)),
-    search_ef=st.one_of(st.none(), st.integers(min_value=10, max_value=1000)),
+    records_to_add=st.integers(min_value=100, max_value=5000),
+    batch_size=st.one_of(st.none(), st.integers(min_value=10, max_value=5000)),
+    sync_threshold=st.one_of(st.none(), st.integers(min_value=100, max_value=5000)),
+    search_ef=st.one_of(st.none(), st.integers(min_value=10, max_value=5000)),
     num_threads=st.one_of(st.none(), st.integers(min_value=1, max_value=10)),
     resize_factor=st.one_of(st.none(), st.floats(min_value=1.0, max_value=10.0)),
 )

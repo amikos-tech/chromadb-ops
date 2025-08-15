@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os
 from typing import Sequence, Optional
-
+from packaging import version
 import chromadb
 import typer
 from rich.console import Console
@@ -30,6 +30,9 @@ def commit_wal(
     validate_chroma_persist_dir(persist_dir)
     skip_collection_names = skip_collection_names or []
     console = Console()
+    if version.parse(chromadb.__version__) > version.parse("1.0.0"):
+        console.print("[red]This command is deprecated in ChromaDB 1.0.0+.[/red]")
+        return
     print_chroma_version(console)
     collections_to_commit = []
     vector_segments = []

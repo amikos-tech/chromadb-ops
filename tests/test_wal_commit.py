@@ -3,6 +3,8 @@ import sqlite3
 import tempfile
 import uuid
 
+from packaging import version
+import pytest
 from hypothesis import given, settings
 import hypothesis.strategies as st
 
@@ -14,11 +16,14 @@ from pytest import CaptureFixture
 from chroma_ops.wal_commit import commit_wal
 
 
-@given(records_to_add=st.sampled_from([999, 2000, 3000, 10000]))
+@given(records_to_add=st.sampled_from([999, 2000, 3000, 5000]))
 @settings(deadline=None)
 def test_basic_commit(records_to_add: int) -> None:
+    if version.parse(chromadb.__version__) > version.parse("1.0.0"):
+        pytest.skip("Requires chromadb < 1.0.0")
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
+        records_to_add = min(records_to_add, client.get_max_batch_size())
         col = client.create_collection("test")
         ids_documents = [
             (f"{uuid.uuid4()}", f"document {i}", [0.1] * 1536)
@@ -74,6 +79,8 @@ def test_basic_commit(records_to_add: int) -> None:
 @given(records_to_add=st.sampled_from([1, 1001, 3000, 10000]))
 @settings(deadline=None)
 def test_commit_skip_collection(records_to_add: int) -> None:
+    if version.parse(chromadb.__version__) > version.parse("1.0.0"):
+        pytest.skip("Requires chromadb < 1.0.0")
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
         col = client.create_collection("test")
@@ -133,6 +140,8 @@ def test_commit_skip_collection(records_to_add: int) -> None:
 
 
 def test_empty_collections(capsys: CaptureFixture[str]) -> None:
+    if version.parse(chromadb.__version__) > version.parse("1.0.0"):
+        pytest.skip("Requires chromadb < 1.0.0")
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=temp_dir)
         client.create_collection("test")

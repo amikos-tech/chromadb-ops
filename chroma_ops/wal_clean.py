@@ -15,6 +15,7 @@ from chroma_ops.utils import (
 )
 from chroma_ops.constants import DEFAULT_TENANT_ID, DEFAULT_TOPIC_NAMESPACE
 from rich.console import Console
+from packaging import version
 
 
 def clean_wal(
@@ -30,16 +31,15 @@ def clean_wal(
     console.print(f"[green]Size before: {get_dir_size(persist_dir)}[/green]")
     with get_sqlite_connection(persist_dir, SqliteMode.READ_WRITE) as conn:
         cursor = conn.cursor()
-        if int(chroma_version.split(".")[1]) <= 4:
+        import chromadb
+
+        if version.parse(chromadb.__version__) < version.parse("0.5.0"):
             collection_name_index = 4
             query = "SELECT s.id as 'segment',s.topic as 'topic', c.id as 'collection' , c.dimension as 'dimension', c.name FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
         else:
             collection_name_index = 3
             query = "SELECT s.id as 'segment', c.id as 'collection' , c.dimension as 'dimension', c.name FROM segments s LEFT JOIN collections c ON s.collection = c.id WHERE s.scope = 'VECTOR';"
-
-        cursor.execute(query)
-
-        results = cursor.fetchall()
+        results = cursor.execute(query).fetchall()
         wal_cleanup_queries = []
         if len(results) == 0:
             console.print("[green]No WAL entries found. Nothing to clean up.[/green]")

@@ -7,6 +7,11 @@ import sqlite3
 import tempfile
 import traceback
 from typing import Any, Callable, Dict, List, Optional, Tuple, TypedDict
+
+import chromadb
+from packaging import version
+
+
 import hnswlib
 import typer
 from rich.console import Console
@@ -38,6 +43,7 @@ hnsw_commands = typer.Typer(no_args_is_help=True)
 
 
 class HnswDetails(TypedDict):
+    id: str
     collection_name: str
     database: str
     space: str
@@ -70,8 +76,11 @@ def _get_hnsw_details(
     database: Optional[str] = "default_database",
     verbose: Optional[bool] = False,
 ) -> HnswDetails:
+    import chromadb
+
     collection_details = conn.execute(
-        "SELECT id,dimension FROM collections WHERE name = ?", (collection_name,)
+        "SELECT id,dimension,config_json_str FROM collections WHERE name = ?",
+        (collection_name,),
     ).fetchone()
     if collection_details is None or len(collection_details) == 0:
         raise ValueError(f"Collection {collection_name} not found")
@@ -82,25 +91,43 @@ def _get_hnsw_details(
         "SELECT id FROM segments WHERE scope = 'VECTOR' AND collection = ?",
         (collection_details[0],),
     ).fetchone()
-    segment_metadata = conn.execute(
-        """ SELECT json_object(
-    'segment_id', segment_id,
-    'metadata', json_object(
-        'hnsw:search_ef',MAX(CASE WHEN key = 'hnsw:search_ef' THEN int_value END),
-        'hnsw:construction_ef', MAX(CASE WHEN key = 'hnsw:construction_ef' THEN int_value END),
-        'hnsw:M', MAX(CASE WHEN key = 'hnsw:M' THEN int_value END),
-        'hnsw:batch_size', MAX(CASE WHEN key = 'hnsw:batch_size' THEN int_value END),
-        'hnsw:sync_threshold', MAX(CASE WHEN key = 'hnsw:sync_threshold' THEN int_value END),
-        'hnsw:space', MAX(CASE WHEN key = 'hnsw:space' THEN str_value END),
-        'hnsw:num_threads', MAX(CASE WHEN key = 'hnsw:num_threads' THEN int_value END),
-        'hnsw:resize_factor', MAX(CASE WHEN key = 'hnsw:resize_factor' THEN float_value END)
-        )
-    ) AS result_json
-    FROM segment_metadata WHERE segment_id = ?""",
-        (segment_id[0],),
-    ).fetchone()
-
-    config = json.loads(segment_metadata[0])["metadata"]
+    if version.parse(chromadb.__version__) >= version.parse("1.0.0"):
+        hnsw_config = json.loads(collection_details[2])["vector_index"]["hnsw"]
+        config = {
+            "hnsw:search_ef": hnsw_config.get("ef_search", DEFAULT_SEARCH_EF),
+            "hnsw:construction_ef": hnsw_config.get(
+                "ef_construction", DEFAULT_CONSTRUCTION_EF
+            ),
+            "hnsw:M": hnsw_config.get("max_neighbors", DEFAULT_M),
+            "hnsw:batch_size": hnsw_config.get("batch_size", DEFAULT_BATCH_SIZE),
+            "hnsw:sync_threshold": hnsw_config.get(
+                "sync_threshold", DEFAULT_SYNC_THRESHOLD
+            ),
+            "hnsw:space": hnsw_config.get("space", DEFAULT_DISTANCE_METRIC),
+            "hnsw:num_threads": hnsw_config.get("num_threads", DEFAULT_NUM_THREADS),
+            "hnsw:resize_factor": hnsw_config.get(
+                "resize_factor", DEFAULT_RESIZE_FACTOR
+            ),
+        }
+    else:
+        segment_metadata = conn.execute(
+            """ SELECT json_object(
+        'segment_id', segment_id,
+        'metadata', json_object(
+            'hnsw:search_ef',MAX(CASE WHEN key = 'hnsw:search_ef' THEN int_value END),
+            'hnsw:construction_ef', MAX(CASE WHEN key = 'hnsw:construction_ef' THEN int_value END),
+            'hnsw:M', MAX(CASE WHEN key = 'hnsw:M' THEN int_value END),
+            'hnsw:batch_size', MAX(CASE WHEN key = 'hnsw:batch_size' THEN int_value END),
+            'hnsw:sync_threshold', MAX(CASE WHEN key = 'hnsw:sync_threshold' THEN int_value END),
+            'hnsw:space', MAX(CASE WHEN key = 'hnsw:space' THEN str_value END),
+            'hnsw:num_threads', MAX(CASE WHEN key = 'hnsw:num_threads' THEN int_value END),
+            'hnsw:resize_factor', MAX(CASE WHEN key = 'hnsw:resize_factor' THEN float_value END)
+            )
+        ) AS result_json
+        FROM segment_metadata WHERE segment_id = ?""",
+            (segment_id[0],),
+        ).fetchone()
+        config = json.loads(segment_metadata[0])["metadata"]
     space = (
         config["hnsw:space"]
         if "hnsw:space" in config and config["hnsw:space"]
@@ -151,13 +178,19 @@ def _get_hnsw_details(
         persistent_data = PersistentData.load_from_file(
             os.path.join(persist_dir, segment_id[0], "index_metadata.pickle")
         )
-        id_to_label = persistent_data.id_to_label
-        total_elements_added = persistent_data.total_elements_added
+        id_to_label = (
+            persistent_data.id_to_label
+            if hasattr(persistent_data, "id_to_label")
+            else persistent_data["id_to_label"]  # type: ignore
+        )
+        total_elements_added = (
+            persistent_data.total_elements_added
+            if hasattr(persistent_data, "total_elements_added")
+            else persistent_data["total_elements_added"]  # type: ignore
+        )
         if len(id_to_label) > 0:
             fragmentation_level = (
-                (persistent_data.total_elements_added - len(id_to_label))
-                / persistent_data.total_elements_added
-                * 100
+                (total_elements_added - len(id_to_label)) / total_elements_added * 100
             )
         else:
             fragmentation_level = 0.0
@@ -187,6 +220,7 @@ def _get_hnsw_details(
         has_metadata = False
 
     return HnswDetails(
+        id=collection_details[0],
         collection_name=collection_name,
         database=database if database else "default_database",
         space=space,
@@ -253,7 +287,10 @@ def _update_hnsw_metadata(segment_path: str, elements_added: int) -> None:
     pd = PersistentData.load_from_file(
         os.path.join(segment_path, "index_metadata.pickle")
     )
-    pd.total_elements_added = elements_added
+    if hasattr(pd, "total_elements_added"):
+        pd.total_elements_added = elements_added
+    else:
+        pd["total_elements_added"] = elements_added  # type: ignore
     with open(
         os.path.join(segment_path, "index_metadata.pickle"), "wb"
     ) as metadata_file:
@@ -282,96 +319,176 @@ def _prepare_hnsw_segment_config_changes(
     changes_diff: Dict[str, Dict[str, Any]] = {}
     final_changes: HnswDetails = hnsw_details.copy()
     if space and space != hnsw_details["space"]:
-        changes_callbacks.append(
-            lambda conn: conn.execute(
-                "INSERT INTO segment_metadata (segment_id, key, str_value) VALUES (?, 'hnsw:space', ?) ON CONFLICT (segment_id, key) DO UPDATE SET str_value = ?",
-                (segment_id, space, space),
+        if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    "INSERT INTO segment_metadata (segment_id, key, str_value) VALUES (?, 'hnsw:space', ?) ON CONFLICT (segment_id, key) DO UPDATE SET str_value = ?",
+                    (segment_id, space, space),
+                )
             )
-        )
+        else:
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    """UPDATE collections
+                       SET config_json_str = json_set(config_json_str, '$.vector_index.hnsw.space', ?)
+                        WHERE id = ?;""",
+                    (space, hnsw_details["id"]),
+                )
+            )
         changes_diff["hnsw:space"] = {
             "old": hnsw_details["space"],
             "new": space,
         }
         final_changes["space"] = space
     if construction_ef and construction_ef != hnsw_details["construction_ef"]:
-        changes_callbacks.append(
-            lambda conn: conn.execute(
-                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:construction_ef', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
-                (segment_id, construction_ef, construction_ef),
+        if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:construction_ef', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                    (segment_id, construction_ef, construction_ef),
+                )
             )
-        )
+        else:
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    """UPDATE collections
+                       SET config_json_str = json_set(config_json_str, '$.vector_index.hnsw.ef_construction', ?)
+                       WHERE id = ?;""",
+                    (construction_ef, hnsw_details["id"]),
+                )
+            )
         changes_diff["hnsw:construction_ef"] = {
             "old": hnsw_details["construction_ef"],
             "new": construction_ef,
         }
         final_changes["construction_ef"] = construction_ef
     if search_ef and search_ef != hnsw_details["search_ef"]:
-        changes_callbacks.append(
-            lambda conn: conn.execute(
-                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:search_ef', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
-                (segment_id, search_ef, search_ef),
+        if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:search_ef', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                    (segment_id, search_ef, search_ef),
+                )
             )
-        )
+        else:
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    """UPDATE collections
+                       SET config_json_str = json_set(config_json_str, '$.vector_index.hnsw.ef_search', ?)
+                       WHERE id = ?;""",
+                    (search_ef, hnsw_details["id"]),
+                )
+            )
         changes_diff["hnsw:search_ef"] = {
             "old": hnsw_details["search_ef"],
             "new": search_ef,
         }
         final_changes["search_ef"] = search_ef
     if m and m != hnsw_details["m"]:
-        changes_callbacks.append(
-            lambda conn: conn.execute(
-                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:M', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
-                (segment_id, m, m),
+        if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:M', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                    (segment_id, m, m),
+                )
             )
-        )
+        else:
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    """UPDATE collections
+                       SET config_json_str = json_set(config_json_str, '$.vector_index.hnsw.max_neighbors', ?)
+                       WHERE id = ?;""",
+                    (m, hnsw_details["id"]),
+                )
+            )
         changes_diff["hnsw:M"] = {
             "old": hnsw_details["m"],
             "new": m,
         }
         final_changes["m"] = m
     if num_threads and num_threads != hnsw_details["num_threads"]:
-        changes_callbacks.append(
-            lambda conn: conn.execute(
-                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:num_threads', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
-                (segment_id, num_threads, num_threads),
+        if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:num_threads', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                    (segment_id, num_threads, num_threads),
+                )
             )
-        )
+        else:
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    """UPDATE collections
+                       SET config_json_str = json_set(config_json_str, '$.vector_index.hnsw.num_threads', ?)
+                       WHERE id = ?;""",
+                    (num_threads, hnsw_details["id"]),
+                )
+            )
         changes_diff["hnsw:num_threads"] = {
             "old": hnsw_details["num_threads"],
             "new": num_threads,
         }
         final_changes["num_threads"] = num_threads
     if resize_factor and resize_factor != hnsw_details["resize_factor"]:
-        changes_callbacks.append(
-            lambda conn: conn.execute(
-                "INSERT INTO segment_metadata (segment_id, key, float_value) VALUES (?, 'hnsw:resize_factor', ?) ON CONFLICT (segment_id, key) DO UPDATE SET float_value = ?",
-                (segment_id, resize_factor, resize_factor),
+        if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    "INSERT INTO segment_metadata (segment_id, key, float_value) VALUES (?, 'hnsw:resize_factor', ?) ON CONFLICT (segment_id, key) DO UPDATE SET float_value = ?",
+                    (segment_id, resize_factor, resize_factor),
+                )
             )
-        )
+        else:
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    """UPDATE collections
+                       SET config_json_str = json_set(config_json_str, '$.vector_index.hnsw.resize_factor', ?)
+                       WHERE id = ?;""",
+                    (resize_factor, hnsw_details["id"]),
+                )
+            )
         changes_diff["hnsw:resize_factor"] = {
             "old": hnsw_details["resize_factor"],
             "new": resize_factor,
         }
         final_changes["resize_factor"] = resize_factor
     if batch_size and batch_size != hnsw_details["batch_size"]:
-        changes_callbacks.append(
-            lambda conn: conn.execute(
-                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:batch_size', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
-                (segment_id, batch_size, batch_size),
+        if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:batch_size', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                    (segment_id, batch_size, batch_size),
+                )
             )
-        )
+        else:
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    """UPDATE collections
+                       SET config_json_str = json_set(config_json_str, '$.vector_index.hnsw.batch_size', ?)
+                       WHERE id = ?;""",
+                    (batch_size, hnsw_details["id"]),
+                )
+            )
         changes_diff["hnsw:batch_size"] = {
             "old": hnsw_details["batch_size"],
             "new": batch_size,
         }
         final_changes["batch_size"] = batch_size
     if sync_threshold and sync_threshold != hnsw_details["sync_threshold"]:
-        changes_callbacks.append(
-            lambda conn: conn.execute(
-                "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:sync_threshold', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
-                (segment_id, sync_threshold, sync_threshold),
+        if version.parse(chromadb.__version__) < version.parse("1.0.0"):
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    "INSERT INTO segment_metadata (segment_id, key, int_value) VALUES (?, 'hnsw:sync_threshold', ?) ON CONFLICT (segment_id, key) DO UPDATE SET int_value = ?",
+                    (segment_id, sync_threshold, sync_threshold),
+                )
             )
-        )
+        else:
+            changes_callbacks.append(
+                lambda conn: conn.execute(
+                    """UPDATE collections
+                       SET config_json_str = json_set(config_json_str, '$.vector_index.hnsw.sync_threshold', ?)
+                       WHERE id = ?;""",
+                    (sync_threshold, hnsw_details["id"]),
+                )
+            )
         changes_diff["hnsw:sync_threshold"] = {
             "old": hnsw_details["sync_threshold"],
             "new": sync_threshold,
