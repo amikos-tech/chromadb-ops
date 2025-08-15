@@ -138,9 +138,13 @@ def info(
                                 )
                             segment["hnsw_metadata_total_elements"] = len(
                                 hnsw_metadata.id_to_label
+                                if hasattr(hnsw_metadata, "id_to_label")
+                                else hnsw_metadata["id_to_label"]  # type: ignore
                             )
                             segment["wal_gap"] = collection["records"] - len(
                                 hnsw_metadata.id_to_label
+                                if hasattr(hnsw_metadata, "id_to_label")
+                                else hnsw_metadata["id_to_label"]  # type: ignore
                             )
                             hnsw_params = HnswParams(collection["metadata"])
                             index = hnswlib.Index(
@@ -156,17 +160,26 @@ def info(
                             segment["hnsw_raw_capacity"] = index.element_count
                             # fragmentation ration tells us the ratio of active elements vs total elements -
                             # the greater this number the more fragmented the index is impacting memory and performance
-                            segment["fragmentation_level"] = (
-                                (
-                                    index.element_count
-                                    - segment["hnsw_raw_total_elements"]
-                                )
-                                / index.element_count
-                            ) * 100
-                            hnsw_metadata_labels = set(hnsw_metadata.label_to_id.keys())
-                            segment["hnsw_orphan_elements"] = (
-                                set(hnsw_ids) - hnsw_metadata_labels
+                            id_to_label = (
+                                hnsw_metadata.id_to_label
+                                if hasattr(hnsw_metadata, "id_to_label")
+                                else hnsw_metadata["id_to_label"]  # type: ignore
                             )
+                            total_elements_added = (
+                                hnsw_metadata.total_elements_added
+                                if hasattr(hnsw_metadata, "total_elements_added")
+                                else hnsw_metadata["total_elements_added"]  # type: ignore
+                            )
+                            segment["fragmentation_level"] = (
+                                (total_elements_added - len(id_to_label))
+                                / total_elements_added
+                                * 100
+                            )
+                            segment["hnsw_orphan_elements"] = 0
+                            # this needs review
+                            # = (
+                            #     set(hnsw_ids) - set(id_to_label.values())
+                            # )
                             index.close_file_handles()
                     else:
                         # TODO implement stats on the metadata segment

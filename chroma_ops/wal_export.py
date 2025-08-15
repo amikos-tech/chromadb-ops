@@ -4,6 +4,8 @@ import sys
 from contextlib import contextmanager
 from typing import Optional, Generator, IO, Union, Any, TextIO
 
+from packaging import version
+import chromadb
 import typer
 
 from chroma_ops.constants import DEFAULT_TENANT_ID, DEFAULT_TOPIC_NAMESPACE
@@ -43,6 +45,9 @@ def export_wal(
 ) -> None:
     validate_chroma_persist_dir(persist_dir)
     console = Console(stderr=True)
+    if version.parse(chromadb.__version__) > version.parse("1.0.0"):
+        console.print("[red]This command is deprecated in ChromaDB 1.0.0+.[/red]")
+        return
     print_chroma_version(console)
     table = Table(title="Exporting WAL")
     table.add_column("Collection", style="cyan")

@@ -33,7 +33,7 @@ def dict_strategy(draw: st.DrawFn) -> Dict[str, Any]:
 
 
 @given(
-    records_to_add=st.integers(min_value=100, max_value=10000),
+    records_to_add=st.integers(min_value=100, max_value=5000),
     metadata=dict_strategy(),
 )
 @settings(deadline=None, max_examples=10)

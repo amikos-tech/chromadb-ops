@@ -4,7 +4,6 @@ import tempfile
 from typing import Optional
 import uuid
 import chromadb
-
 import numpy as np
 from hypothesis import given, settings
 import hypothesis.strategies as st
@@ -23,6 +22,7 @@ def test_wal_config(records_to_add: int, purge: Optional[PurgeFlag]) -> None:
     sync_threshold = 1000
     with tempfile.TemporaryDirectory() as temp_dir:
         client = chromadb.PersistentClient(path=os.path.join(temp_dir, "original"))
+        records_to_add = min(records_to_add, client.get_max_batch_size())
         col = client.create_collection("test_collection")
         ids = [f"{uuid.uuid4()}" for _ in range(records_to_add)]
         embeddings = np.random.uniform(0, 1, (records_to_add, 384))

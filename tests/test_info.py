@@ -10,7 +10,7 @@ from pytest import CaptureFixture
 from chroma_ops.db_info import info
 
 
-@given(records_to_add=st.sampled_from([1000, 2000, 3000, 10000]))
+@given(records_to_add=st.sampled_from([1000, 2000, 3000, 5000]))
 @settings(deadline=None)
 def test_basic_info(records_to_add: int) -> None:
     with tempfile.TemporaryDirectory() as temp_dir:

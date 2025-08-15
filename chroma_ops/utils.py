@@ -5,12 +5,12 @@ import pickle
 import shutil
 import sqlite3
 from typing import List, cast, Optional, Dict, Union, Generator, Any
-
+from rich.table import Table
+from rich.console import Console
 from chromadb import Collection
 import chromadb
 from chromadb import __version__ as chroma_version
 import hnswlib
-from rich.console import Console
 
 
 def validate_chroma_persist_dir(persist_dir: str) -> None:
@@ -155,7 +155,9 @@ def sizeof_fmt(num: int, suffix: str = "B") -> str:
 
 
 def list_collections(client: chromadb.PersistentClient) -> List[Collection]:
-    if tuple(int(part) for part in chroma_version.split(".")) < (0, 6, 0):
+    if tuple(int(part) for part in chroma_version.split(".")) < (0, 6, 0) or tuple(
+        int(part) for part in chroma_version.split(".")
+    ) >= (1, 0, 0):
         return client.list_collections()  # type: ignore
     else:
         collections = []
@@ -194,3 +196,44 @@ def print_chroma_version(console: Console) -> None:
     console.print(
         f"[bold green]ChromaDB version[/bold green]: [bold blue]{chroma_version}[/bold blue]"
     )
+
+
+def print_snapshot_details(snapshot_file: str) -> None:
+    """Print the details of the snapshot"""
+    with get_sqlite_snapshot_connection(snapshot_file) as conn:
+        script = read_script("scripts/snapshot.sql")
+        conn.executescript(script)
+        conn.commit()
+        console = Console()
+        table = Table(title="Snapshot Details")
+        table.add_column("ID", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Collection", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Tenant/DB", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Embeddings", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Metadata", justify="right", style="cyan", no_wrap=True)
+
+        for row in conn.execute("SELECT * FROM collections"):
+            collection_id = row[0]
+            collection_name = row[1]
+            tenant_id = row[2]
+            db_id = row[3]
+            db_name = row[4]
+            config_json_str = row[5]
+            count = conn.execute(
+                "SELECT COUNT(*) FROM embeddings WHERE collection_id = ?",
+                (collection_id,),
+            ).fetchone()
+            if count is None:
+                count = 0
+            else:
+                count = count[0]
+            table.add_row(
+                collection_id,
+                collection_name,
+                tenant_id,
+                db_id,
+                db_name,
+                config_json_str,
+                count,
+            )
+        console.print(table)
