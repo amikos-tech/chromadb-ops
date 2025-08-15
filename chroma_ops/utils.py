@@ -208,9 +208,11 @@ def print_snapshot_details(snapshot_file: str) -> None:
         table = Table(title="Snapshot Details")
         table.add_column("ID", justify="right", style="cyan", no_wrap=True)
         table.add_column("Collection", justify="right", style="cyan", no_wrap=True)
-        table.add_column("Tenant/DB", justify="right", style="cyan", no_wrap=True)
-        table.add_column("Embeddings", justify="right", style="cyan", no_wrap=True)
-        table.add_column("Metadata", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Tenant ID", justify="right", style="cyan", no_wrap=True)
+        table.add_column("DB ID", justify="right", style="cyan", no_wrap=True)
+        table.add_column("DB Name", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Table Config", justify="right", style="cyan", no_wrap=True)
+        table.add_column("Count", justify="right", style="cyan", no_wrap=True)
 
         for row in conn.execute("SELECT * FROM collections"):
             collection_id = row[0]
