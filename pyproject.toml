@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "chromadb-ops"
-version = "0.1.4"
+version = "0.1.5"
 description = "Maintenance CLI for Chroma AI-native database."
 authors = ["Trayan Azarov <trayan.azarov@amikos.tech>"]
 license = "MIT"
